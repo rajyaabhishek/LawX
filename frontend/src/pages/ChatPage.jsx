@@ -39,69 +39,17 @@ const ChatPage = () => {
     const navigate = useNavigate();
     const setConversationsState = useSetRecoilState(conversationsAtom);
     const [networkUsers, setNetworkUsers] = useState([]);
-    const [userAuthenticated, setUserAuthenticated] = useState(false);
-    const [authCheckComplete, setAuthCheckComplete] = useState(false);
-    
-    // Check authentication state on component mount and when currentUser changes
+    // userAuthenticated and authCheckComplete states are removed.
+
+    // New useEffect for redirection based on currentUser
     useEffect(() => {
-        const checkAuthentication = async () => {
-            // First check if we have user data in localStorage
-            const userFromStorage = JSON.parse(localStorage.getItem('user-threads'));
-            
-            // If we have a currentUser from Recoil or localStorage, consider it valid
-            if ((currentUser?._id) || (userFromStorage?._id)) {
-                const user = currentUser || userFromStorage;
-                console.log('User authenticated:', user.username);
-                setUserAuthenticated(true);
-                return;
-            }
-
-            const token = localStorage.getItem('jwt');
-            
-            // If no token, redirect to login
-            if (!token) {
-                console.log('No token found, redirecting to login');
-                setUserAuthenticated(false);
-                navigate('/login');
-                return;
-            }
-
-            // If we have a token but no user data, try to validate it
-            try {
-                const response = await fetch('http://localhost:5000/api/v1/auth/me', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    console.log('User session validated:', userData.username);
-                    // Update the user in localStorage
-                    localStorage.setItem('user-threads', JSON.stringify(userData));
-                    setUserAuthenticated(true);
-                } else {
-                    console.log('Token validation failed, clearing and redirecting');
-                    localStorage.removeItem('jwt');
-                    localStorage.removeItem('user-threads');
-                    setUserAuthenticated(false);
-                    navigate('/login');
-                }
-            } catch (error) {
-                console.error('Error validating token:', error);
-                localStorage.removeItem('jwt');
-                localStorage.removeItem('user-threads');
-                setUserAuthenticated(false);
-                navigate('/login');
-            } finally {
-                setAuthCheckComplete(true);
-            }
-        };
-        
-        checkAuthentication();
+        // currentUser is from useRecoilValue(userAtom)
+        // App.jsx should prevent rendering ChatPage if not authenticated.
+        // This is a safeguard or handles cases where userAtom is cleared during the session.
+        if (!currentUser?._id) {
+            console.log('ChatPage: currentUser not found, redirecting to login.');
+            navigate('/login');
+        }
     }, [currentUser, navigate]);
 
     useEffect(() => {
@@ -126,68 +74,50 @@ const ChatPage = () => {
 
     useEffect(() => {
         const getConversations = async () => {
-            // Get user from localStorage as fallback
-            const userFromStorage = JSON.parse(localStorage.getItem('user-threads'));
-            const token = localStorage.getItem('jwt');
-            
-            if (!token && !userFromStorage?._id) {
-                console.log('Skipping conversations fetch: No token or user data');
+            if (!currentUser?._id) {
+                console.log('Skipping conversations fetch: No current user.');
+                setLoadingConversations(false); // Ensure loading is stopped
                 return;
             }
 
+            setLoadingConversations(true);
             try {
-                console.log("Fetching conversations...");
-                
-                const response = await fetch('http://localhost:5000/api/v1/messages/conversations', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
-                });
+                console.log("Fetching conversations with axiosInstance...");
+                const response = await axiosInstance.get("/messages/conversations");
+                const data = response.data;
 
-                if (response.status === 401) {
-                    console.log('Session expired, clearing auth data');
-                    localStorage.removeItem('jwt');
-                    localStorage.removeItem('user-threads');
-                    setUserAuthenticated(false);
-                    navigate('/login');
-                    return;
-                }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
                 console.log("Conversations data:", data);
-                
                 setConversations(data);
-                
-                if (data.length > 0 && !selectedConversation) {
+
+                if (data.length > 0 && !selectedConversation?._id) {
                     const firstConversation = data[0];
-                    // Make sure we have participants before accessing them
                     if (firstConversation.participantDetails && firstConversation.participantDetails.length > 0) {
                         const otherParticipant = firstConversation.participantDetails[0];
-                        console.log("Setting selected conversation:", otherParticipant);
-                        setSelectedConversation({
-                            _id: firstConversation._id,
-                            userId: otherParticipant._id,
-                            username: otherParticipant.username,
-                            userProfilePic: otherParticipant.profilePic || otherParticipant.profilePicture
-                        });
+                        if (otherParticipant?._id && otherParticipant?.username) {
+                            setSelectedConversation({
+                                _id: firstConversation._id,
+                                userId: otherParticipant._id,
+                                username: otherParticipant.username,
+                                userProfilePic: otherParticipant.profilePic || otherParticipant.profilePicture,
+                            });
+                        }
                     }
                 }
             } catch (error) {
                 console.error("Error fetching conversations:", error);
-                showToast("Error", "Failed to load conversations", "error");
+                if (error.response && error.response.status === 401) {
+                    console.log('ChatPage: Axios error in getConversations (401). Navigating to login.');
+                    navigate('/login'); // App.jsx should handle localStorage clearing via its auth logic
+                } else {
+                    showToast("Error", error.response?.data?.message || "Failed to load conversations", "error");
+                }
             } finally {
                 setLoadingConversations(false);
             }
         };
+
         getConversations();
-    }, [showToast, setConversations, setSelectedConversation, selectedConversation]);
+    }, [currentUser, showToast, setConversations, setSelectedConversation, navigate]); // Removed selectedConversation from deps
 
     // Handle search input change with debounce
     const handleSearchChange = async (e) => {
@@ -455,28 +385,13 @@ const ChatPage = () => {
         }
     };
 
-    // Loading or authentication check
-    if (!authCheckComplete) {
+    // New loading state based on currentUser
+    if (!currentUser?._id) {
+        // This state should ideally be brief as the useEffect above would navigate away,
+        // or App.jsx wouldn't have routed here.
         return (
             <Flex justify="center" align="center" h="calc(100vh - 100px)" p={4}>
-                <Text fontSize="xl">Loading...</Text>
-            </Flex>
-        );
-    }
-    
-    // Not authenticated
-    if (!userAuthenticated) {
-        return (
-            <Flex justify="center" align="center" direction="column" h="calc(100vh - 100px)" p={4}>
-                <Text fontSize="xl" mb={4}>Authentication Required</Text>
-                <Text color="gray.500">Please log in to access the chat feature.</Text>
-                <Button
-                    mt={4}
-                    colorScheme="blue"
-                    onClick={() => window.location.href = '/auth/login'}
-                >
-                    Go to Login Page
-                </Button>
+                <Text fontSize="xl">Loading user data...</Text>
             </Flex>
         );
     }
@@ -505,10 +420,10 @@ const ChatPage = () => {
                         placeholder='Search for a user...'
                         value={searchText}
                         onChange={handleInputChange}
-                        onFocus={() => userAuthenticated && searchText.trim() && setShowSearchResults(true)}
+                        onFocus={() => currentUser?._id && searchText.trim() && setShowSearchResults(true)}
                         bg={useColorModeValue("gray.100", "gray.700")}
                         border="none"
-                        isDisabled={!userAuthenticated}
+                        isDisabled={!currentUser?._id}
                         _focus={{
                             bg: useColorModeValue("white", "gray.600"),
                             boxShadow: "sm"
@@ -520,11 +435,11 @@ const ChatPage = () => {
                         colorScheme="blue"
                         px={6}
                         isLoading={searchingUser}
-                        isDisabled={!userAuthenticated}
+                        isDisabled={!currentUser?._id}
                         onClick={() => {
-                            if (userAuthenticated && searchText.trim()) {
+                            if (currentUser?._id && searchText.trim()) {
                                 handleSearchChange({ target: { value: searchText } });
-                            } else if (!userAuthenticated) {
+                            } else if (!currentUser?._id) {
                                 showToast("Error", "You must be logged in to search for users", "error");
                             }
                         }}
@@ -535,7 +450,7 @@ const ChatPage = () => {
                 </Flex>
                         
                         {/* Search Results Dropdown */}
-                        {showSearchResults && searchText.trim() && searchResults.length > 0 && userAuthenticated && (
+                        {showSearchResults && searchText.trim() && searchResults.length > 0 && currentUser?._id && (
                             <Box
                                 position="absolute"
                                 top="100%"

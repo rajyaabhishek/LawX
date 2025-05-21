@@ -9,8 +9,22 @@ const server = http.createServer(app);
 const io = new Server(server, {
 	cors: {
 		origin: "http://localhost:5173",
-		methods: ["GET", "POST"],
+		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		credentials: true,
+		allowedHeaders: ["Content-Type", "Authorization", "userId"],
+		exposedHeaders: ["Content-Type", "Authorization"],
+		preflight: true,
+		optionsSuccessStatus: 204
 	},
+	
+	// Handle preflight requests
+	handlePreflightRequest: (req, res) => {
+		res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+		res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, userId');
+		res.header('Access-Control-Allow-Credentials', 'true');
+		res.status(204).end();
+	}
 });
 
 export const getRecipientSocketId = (recipientId) => {

@@ -1,7 +1,6 @@
-import { Avatar, Box, Flex, Image, Skeleton, Text, useColorModeValue } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Image, Skeleton, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { BsCheck2All } from "react-icons/bs";
-import { formatMessageTimestamp } from "../utils/dateUtils";
 import { useRecoilValue } from "recoil";
 import { selectedConversationAtom } from "../atoms/messagesAtom";
 import userAtom from "../atoms/userAtom";
@@ -15,31 +14,8 @@ const Message = ({ ownMessage, message }) => {
 			{ownMessage ? (
 				<Flex gap={2} alignSelf={"flex-end"}>
 					{message.text && (
-						<Flex
-							bg={"green.500"}
-							maxW={"350px"}
-							p={3}
-							borderRadius={"xl"}
-							position="relative"
-							_after={{
-								content: '""',
-								position: "absolute",
-								bottom: "5px",
-								right: "-5px",
-								width: 0,
-								height: 0,
-								borderTop: "8px solid transparent",
-								borderBottom: "8px solid transparent",
-								borderLeft: "8px solid",
-								borderLeftColor: "green.500",
-							}}
-						>
-							<Flex direction="column">
-								<Text color={"white"}>{message.text}</Text>
-								<Text fontSize="xs" color="gray.200" mt={1} alignSelf="flex-end">
-									{formatMessageTimestamp(message.createdAt)}
-								</Text>
-							</Flex>
+						<Flex bg={"green.800"} maxW={"350px"} p={1} borderRadius={"md"}>
+							<Text color={"white"}>{message.text}</Text>
 							<Box
 								alignSelf={"flex-end"}
 								ml={1}
@@ -51,21 +27,21 @@ const Message = ({ ownMessage, message }) => {
 						</Flex>
 					)}
 					{message.img && !imgLoaded && (
-						<Flex mt={5} w={"200px"} direction="column" alignItems="flex-end">
+						<Flex mt={5} w={"200px"}>
 							<Image
 								src={message.img}
 								hidden
 								onLoad={() => setImgLoaded(true)}
 								alt='Message image'
-								borderRadius={"xl"}
+								borderRadius={4}
 							/>
-							<Skeleton w={"200px"} h={"200px"} borderRadius={"xl"} />
+							<Skeleton w={"200px"} h={"200px"} />
 						</Flex>
 					)}
 
 					{message.img && imgLoaded && (
-						<Flex mt={5} w={"200px"} direction="column" alignItems="flex-end">
-							<Image src={message.img} alt='Message image' borderRadius={"xl"} />
+						<Flex mt={5} w={"200px"}>
+							<Image src={message.img} alt='Message image' borderRadius={4} />
 							<Box
 								alignSelf={"flex-end"}
 								ml={1}
@@ -74,9 +50,6 @@ const Message = ({ ownMessage, message }) => {
 							>
 								<BsCheck2All size={16} />
 							</Box>
-							<Text fontSize="xs" color={useColorModeValue("gray.500", "gray.400")} mt={1} alignSelf="flex-end">
-								{formatMessageTimestamp(message.createdAt)}
-							</Text>
 						</Flex>
 					)}
 
@@ -87,51 +60,26 @@ const Message = ({ ownMessage, message }) => {
 					<Avatar src={selectedConversation.userProfilePic} w='7' h={7} />
 
 					{message.text && (
-						<Flex
-							direction="column"
-							maxW={"350px"}
-							bg={useColorModeValue("gray.200", "gray.600")}
-							p={3}
-							borderRadius={"xl"}
-							position="relative"
-							_after={{
-								content: '""',
-								position: "absolute",
-								bottom: "5px",
-								left: "-5px",
-								width: 0,
-								height: 0,
-								borderTop: "8px solid transparent",
-								borderBottom: "8px solid transparent",
-								borderRight: "8px solid",
-								borderRightColor: useColorModeValue("gray.200", "gray.600"),
-							}}
-						>
-							<Text color={useColorModeValue("black", "white")}>{message.text}</Text>
-							<Text fontSize="xs" color={useColorModeValue("gray.600", "gray.300")} mt={1} alignSelf="flex-start">
-								{formatMessageTimestamp(message.createdAt)}
-							</Text>
-						</Flex>
+						<Text maxW={"350px"} bg={"gray.400"} p={1} borderRadius={"md"} color={"black"}>
+							{message.text}
+						</Text>
 					)}
 					{message.img && !imgLoaded && (
-						<Flex mt={5} w={"200px"} direction="column" alignItems="flex-start">
+						<Flex mt={5} w={"200px"}>
 							<Image
 								src={message.img}
 								hidden
 								onLoad={() => setImgLoaded(true)}
 								alt='Message image'
-								borderRadius={"xl"}
+								borderRadius={4}
 							/>
-							<Skeleton w={"200px"} h={"200px"} borderRadius={"xl"} />
+							<Skeleton w={"200px"} h={"200px"} />
 						</Flex>
 					)}
 
 					{message.img && imgLoaded && (
-						<Flex mt={5} w={"200px"} direction="column" alignItems="flex-start">
-							<Image src={message.img} alt='Message image' borderRadius={"xl"} />
-							<Text fontSize="xs" color={useColorModeValue("gray.500", "gray.400")} mt={1} alignSelf="flex-start">
-								{formatMessageTimestamp(message.createdAt)}
-							</Text>
+						<Flex mt={5} w={"200px"}>
+							<Image src={message.img} alt='Message image' borderRadius={4} />
 						</Flex>
 					)}
 				</Flex>

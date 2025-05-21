@@ -1,5 +1,4 @@
 import { Flex, Text, useColorModeValue, Avatar, Divider, Skeleton, SkeletonCircle, Box } from "@chakra-ui/react";
-import { motion } from "framer-motion";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,14 +9,13 @@ import userAtom from "../atoms/userAtom";
 import { useSocket } from "../context/SocketContext";
 import { axiosInstance } from "../lib/axios";
 
-const MotionBox = motion(Box);
-
-const MessageContainer = () => {
+const MessageContainer = ({ onlineUsers = [] }) => {
   const showToast = useShowToast();
   const selectedConversation = useRecoilValue(selectedConversationAtom);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messages, setMessages] = useState([]);
   const { socket } = useSocket();
+  const [onlineUsersState, setOnlineUsersState] = useState(onlineUsers);
   const setConversations = useSetRecoilState(conversationsAtom);
   const currentUser = useRecoilValue(userAtom);
   const messageEndRef = useRef(null);
@@ -256,7 +254,7 @@ const MessageContainer = () => {
         p={4} 
         overflowY="auto" 
         flexDirection="column"
-        bg={useColorModeValue("gray.50", "gray.800")}
+        bg={useColorModeValue("white", "gray.700")}
       >
         {loadingMessages ? (
           // Loading skeleton
@@ -286,19 +284,15 @@ const MessageContainer = () => {
         ) : (
           // Messages list
           messages.map((message) => (
-            <MotionBox
-              key={message._id}
-              mb={4}
+            <Box 
+              key={message._id} 
               ref={messages.length - 1 === messages.indexOf(message) ? messageEndRef : null}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
             >
-              <Message
-                message={message}
-                ownMessage={currentUser._id === message.sender}
+              <Message 
+                message={message} 
+                ownMessage={currentUser._id === message.sender} 
               />
-            </MotionBox>
+            </Box>
           ))
         )}
       </Flex>

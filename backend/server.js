@@ -25,14 +25,27 @@ import { app, server } from "./socket/socket.js";
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== "production") {
-	app.use(
-		cors({
-			origin: "http://localhost:5173",
-			credentials: true,
-		})
-	);
-}
+// CORS configuration
+const corsOptions = {
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'userId'],
+    exposedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', corsOptions.origin);
+    res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
+    res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.status(204).end();
+});
+
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "5mb" })); // parse JSON request bodies
 app.use(cookieParser());
