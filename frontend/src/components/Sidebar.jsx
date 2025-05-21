@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home, UserPlus, Bell } from "lucide-react";
+import { Home, UserPlus, Bell, Briefcase } from "lucide-react";
 
 export default function Sidebar({ user }) {
 	return (
@@ -47,6 +47,14 @@ export default function Sidebar({ user }) {
 								className='flex items-center py-2 px-4 rounded-md hover:bg-primary hover:text-white transition-colors'
 							>
 								<Bell className='mr-2' size={20} /> Notifications
+							</Link>
+						</li>
+						<li>
+							<Link
+								to='/cases'
+								className='flex items-center py-2 px-4 rounded-md hover:bg-primary hover:text-white transition-colors'
+							>
+								<Briefcase className='mr-2' size={20} /> Legal Cases
 							</Link>
 						</li>
 					</ul>

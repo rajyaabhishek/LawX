@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Home, LogOut, User, Users } from "lucide-react";
+import { Bell, Home, LogOut, MessageSquare, User, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { axiosInstance } from "../../lib/axios";
 
@@ -69,6 +69,13 @@ const Navbar = () => {
 										</span>
 									)}
 								</Link>
+								<Link
+                                   to="/chat"
+                                   className='text-neutral flex flex-col items-center'
+                                >
+                                <MessageSquare size={20} />
+                                <span className='text-xs hidden md:block'>Chat</span>
+                                </Link>
 								<Link
 									to={`/profile/${authUser.username}`}
 									className='text-neutral flex flex-col items-center'
