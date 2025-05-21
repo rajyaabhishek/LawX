@@ -255,8 +255,7 @@ const MessageInput = ({ onSendMessage }) => {
                 boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)",
               }}
               borderRadius="full"
-              pl={5}
-              py={6}
+              pl={4}
             />
             <InputRightElement width="4.5rem" h="full">
               <Flex gap={1} mr={2}>
