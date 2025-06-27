@@ -17,6 +17,9 @@ const messageSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
+// Automatically delete messages after 90 days (60 * 60 * 24 * 90 seconds)
+messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 });
+
 const Message = mongoose.model("Message", messageSchema);
 
 export default Message;

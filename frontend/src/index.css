@@ -1,3 +1,320 @@
-@tailwind base;
+@tailwind base; 
 @tailwind components;
 @tailwind utilities;
+
+/* Ensure Chakra UI theme takes precedence over Tailwind */
+.chakra-ui-light,
+.chakra-ui-dark {
+  /* Reset Tailwind's text color inheritance */
+  * {
+    color: inherit !important;
+  }
+}
+
+/* Light mode styles */
+.chakra-ui-light {
+  --chakra-colors-text: #1A202C;
+  --chakra-colors-bg: #FFFFFF;
+  color: #1A202C !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Dark mode styles */
+.chakra-ui-dark {
+  --chakra-colors-text: #F7FAFC;
+  --chakra-colors-bg: #1A202C;
+  color: #F7FAFC !important;
+  background-color: #1A202C !important;
+}
+
+/* Override Tailwind's base styles that conflict with Chakra */
+body {
+  color: #1A202C !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Ensure all text elements have proper contrast */
+body * {
+  color: inherit;
+}
+
+/* Fix DaisyUI base-100 background conflicts */
+.bg-base-100 {
+  background-color: #FFFFFF !important;
+}
+
+/* Dark mode overrides for when Chakra dark mode is active */
+[data-theme="dark"] body,
+.chakra-ui-dark body {
+  color: #F7FAFC !important;
+  background-color: #1A202C !important;
+}
+
+[data-theme="dark"] .bg-base-100,
+.chakra-ui-dark .bg-base-100 {
+  background-color: #1A202C !important;
+}
+
+/* Ensure Chakra components maintain their styling */
+.chakra-portal,
+.chakra-modal,
+.chakra-popover,
+.chakra-tooltip {
+  color: inherit !important;
+}
+
+/* Fix any remaining text visibility issues */
+.chakra-text,
+.chakra-heading,
+.chakra-button,
+.chakra-input {
+  color: inherit !important;
+}
+
+/* --------------------------------------------- */
+/* Additional overrides to ensure Tailwind-based  */
+/* components play nicely with Chakra dark mode   */
+/* --------------------------------------------- */
+
+/* Apply dark backgrounds when Chakra is in dark mode */
+.chakra-ui-dark .bg-white,
+[data-theme="dark"] .bg-white {
+  background-color: #1F2937 !important; /* gray-800 */
+}
+
+.chakra-ui-dark .bg-gray-50,
+.chakra-ui-dark .bg-gray-100,
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-100 {
+  background-color: #2D3748 !important; /* gray-700 */
+}
+
+/* Borders */
+.chakra-ui-dark .border-gray-200,
+.chakra-ui-dark .border-gray-300,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300 {
+  border-color: #4A5568 !important; /* gray-600 */
+}
+
+/* Text colors */
+.chakra-ui-dark .text-gray-800,
+[data-theme="dark"] .text-gray-800 {
+  color: #F7FAFC !important; /* white */
+}
+
+.chakra-ui-dark .text-gray-700,
+[data-theme="dark"] .text-gray-700 {
+  color: #E2E8F0 !important; /* gray-200 */
+}
+
+.chakra-ui-dark .text-gray-600,
+[data-theme="dark"] .text-gray-600 {
+  color: #CBD5E0 !important; /* gray-400 */
+}
+
+.chakra-ui-dark .text-gray-500,
+[data-theme="dark"] .text-gray-500 {
+  color: #A0AEC0 !important; /* gray-500 */
+}
+
+/* =============================================
+   Mobile Responsive Utilities for LawX
+   ============================================= */
+
+/* Hide scrollbars for smooth mobile experience */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile-friendly touch targets */
+.mobile-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent text from being too small on mobile */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px !important; /* Prevents iOS zoom on input focus */
+  }
+  
+  /* Ensure input fields are appropriately sized */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Improve button accessibility on mobile */
+  button, .chakra-button {
+    min-height: 44px;
+  }
+  
+  /* Make cards more mobile-friendly */
+  .chakra-box {
+    border-radius: 12px;
+  }
+  
+  /* Improve modal sizing on mobile */
+  .chakra-modal__content {
+    margin: 1rem !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
+  
+  /* Better spacing for mobile lists */
+  .chakra-stack > *:not(:last-child) {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Tablet-specific adjustments */
+  .chakra-container {
+    padding: 1rem;
+  }
+}
+
+/* Mobile navigation improvements */
+@media (max-width: 768px) {
+  /* Better mobile navigation */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    z-index: 1000;
+    padding: 0.5rem;
+  }
+  
+  .mobile-nav-dark {
+    background: #1a202c;
+    border-top-color: #4a5568;
+  }
+  
+  /* Adjust content padding for mobile nav */
+  .mobile-content-padding {
+    padding-bottom: 70px;
+  }
+}
+
+/* Improve image responsiveness */
+.responsive-image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Better mobile form layouts */
+@media (max-width: 640px) {
+  .chakra-form-control {
+    margin-bottom: 1rem;
+  }
+  
+  .chakra-input-group {
+    flex-direction: column;
+  }
+  
+  .chakra-input-left-element,
+  .chakra-input-right-element {
+    position: relative;
+    width: 100%;
+    height: auto;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Mobile-friendly table overflow */
+.mobile-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .mobile-table-container table {
+    min-width: 600px;
+  }
+}
+
+/* Safe area handling for iOS devices */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* =============================================
+   Chat Page Mobile Optimizations
+   ============================================= */
+
+/* Chat page specific improvements */
+@media (max-width: 768px) {
+  .chat-page-container {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .chat-conversation-list {
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-message-container {
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-chat-back-button {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: inherit;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Improve chat input on mobile */
+  .chat-input {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  /* Better chat message spacing on mobile */
+  .chat-message {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  /* Optimize conversation list items */
+  .conversation-item {
+    padding: 1rem;
+    min-height: 60px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  /* Search improvements in chat */
+  .chat-search-input {
+    font-size: 16px !important;
+    padding: 0.75rem;
+  }
+}

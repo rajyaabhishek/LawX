@@ -21,15 +21,16 @@ import notificationRoutes from "./routes/notification.route.js";
 import postRoutes from "./routes/post.route.js";
 import userRoutes from "./routes/user.route.js";
 import caseRoutes from "./routes/case.route.js";
+import paymentRoutes from "./routes/payment.route.js";
 import { app, server } from "./socket/socket.js";
 
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
 const corsOptions = {
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177"],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'userId'],
     exposedHeaders: ['Content-Type', 'Authorization'],
     preflightContinue: false,
@@ -38,7 +39,10 @@ const corsOptions = {
 
 // Handle preflight requests
 app.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', corsOptions.origin);
+    const origin = req.headers.origin;
+    if (corsOptions.origin.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
     res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -57,6 +61,7 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/connections", connectionRoutes);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/cases", caseRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 if (process.env.NODE_ENV === "production") {
 	app.use(express.static(path.join(__dirname, "/frontend/dist")));

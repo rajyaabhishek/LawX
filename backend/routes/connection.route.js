@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
 import {
 	acceptConnectionRequest,
 	getConnectionRequests,
@@ -15,11 +15,12 @@ const router = express.Router();
 router.post("/request/:userId", protectRoute, sendConnectionRequest);
 router.put("/accept/:requestId", protectRoute, acceptConnectionRequest);
 router.put("/reject/:requestId", protectRoute, rejectConnectionRequest);
-// Get all connection requests for the current user
-router.get("/requests", protectRoute, getConnectionRequests);
-// Get all connections for a user
-router.get("/", protectRoute, getUserConnections);
+// View-only routes with optional auth (guests can see connections, auth users can interact)
+router.get("/requests", optionalAuth, trackActivity, getConnectionRequests);
+router.get("/", optionalAuth, trackActivity, getUserConnections);
+router.get("/status/:userId", optionalAuth, trackActivity, getConnectionStatus);
+
+// Protected routes (require authentication for actions)
 router.delete("/:userId", protectRoute, removeConnection);
-router.get("/status/:userId", protectRoute, getConnectionStatus);
 
 export default router;

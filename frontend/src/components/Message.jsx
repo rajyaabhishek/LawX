@@ -1,90 +1,109 @@
-import { Avatar, Box, Flex, Image, Skeleton, Text } from "@chakra-ui/react";
-import { useState } from "react";
+import { Avatar, Box, Flex, Text, useColorModeValue, useBreakpointValue } from "@chakra-ui/react";
 import { BsCheck2All } from "react-icons/bs";
 import { useRecoilValue } from "recoil";
 import { selectedConversationAtom } from "../atoms/messagesAtom";
-import userAtom from "../atoms/userAtom";
+import { useUser } from "@clerk/clerk-react";
+import { formatMessageTimestamp } from "../utils/dateUtils";
 
-const Message = ({ ownMessage, message }) => {
+const Message = ({ ownMessage, message, currentMongoUser }) => {
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
-	const user = useRecoilValue(userAtom);
-	const [imgLoaded, setImgLoaded] = useState(false);
+	const { user } = useUser();
+	const isMobile = useBreakpointValue({ base: true, md: false });
+	
+	// Enhanced color mode values for better distinction
+	const ownMessageBg = useColorModeValue("blue.500", "blue.400");
+	const otherMessageBg = useColorModeValue("gray.100", "gray.700");
+	const ownMessageColor = "white";
+	const otherMessageColor = useColorModeValue("gray.800", "white");
+	const timestampColor = useColorModeValue("gray.500", "gray.400");
+	
+	// Adjust max width based on screen size
+	const messageMaxW = isMobile ? "85%" : "350px";
+	const messagePadding = isMobile ? 2 : 3;
+
 	return (
-		<>
+		<Flex 
+			mb={3} 
+			justify={ownMessage ? "flex-end" : "flex-start"}
+			px={isMobile ? 3 : 2}
+			w="100%"
+		>
 			{ownMessage ? (
-				<Flex gap={2} alignSelf={"flex-end"}>
-					{message.text && (
-						<Flex bg={"green.800"} maxW={"350px"} p={1} borderRadius={"md"}>
-							<Text color={"white"}>{message.text}</Text>
-							<Box
-								alignSelf={"flex-end"}
-								ml={1}
-								color={message.seen ? "blue.400" : ""}
-								fontWeight={"bold"}
+				// Own message - Right side (blue)
+				<Flex gap={2} alignSelf="flex-end" maxW={messageMaxW} w="100%">
+					<Flex flexDirection="column" alignItems="flex-end" w="100%">
+						<Box 
+							bg={ownMessageBg}
+							p={messagePadding}
+							borderRadius="lg"
+							borderBottomRightRadius={isMobile ? "lg" : "md"}
+							boxShadow="sm"
+							border="1px solid"
+							borderColor={useColorModeValue("blue.600", "blue.300")}
+							w="fit-content"
+							maxW="100%"
+							ml="auto"
+						>
+							<Text 
+								color={ownMessageColor} 
+								fontSize={isMobile ? "md" : "sm"} 
+								wordBreak="break-word"
 							>
-								<BsCheck2All size={16} />
+								{message.text}
+							</Text>
+						</Box>
+						<Flex alignItems="center" gap={1} mt={1} mr={1}>
+							<Text fontSize="2xs" color={timestampColor}>
+								{formatMessageTimestamp(message.createdAt)}
+							</Text>
+							<Box
+								color={message.seen ? "blue.200" : `${timestampColor}99`}
+								display="flex"
+								alignItems="center"
+							>
+								<BsCheck2All size={isMobile ? 14 : 12} />
 							</Box>
 						</Flex>
-					)}
-					{message.img && !imgLoaded && (
-						<Flex mt={5} w={"200px"}>
-							<Image
-								src={message.img}
-								hidden
-								onLoad={() => setImgLoaded(true)}
-								alt='Message image'
-								borderRadius={4}
-							/>
-							<Skeleton w={"200px"} h={"200px"} />
-						</Flex>
-					)}
-
-					{message.img && imgLoaded && (
-						<Flex mt={5} w={"200px"}>
-							<Image src={message.img} alt='Message image' borderRadius={4} />
-							<Box
-								alignSelf={"flex-end"}
-								ml={1}
-								color={message.seen ? "blue.400" : ""}
-								fontWeight={"bold"}
-							>
-								<BsCheck2All size={16} />
-							</Box>
-						</Flex>
-					)}
-
-					<Avatar src={user.profilePic} w='7' h={7} />
+					</Flex>
+					{!isMobile && <Avatar src={user?.profilePic} w={8} h={8} />}
 				</Flex>
 			) : (
-				<Flex gap={2}>
-					<Avatar src={selectedConversation.userProfilePic} w='7' h={7} />
-
-					{message.text && (
-						<Text maxW={"350px"} bg={"gray.400"} p={1} borderRadius={"md"} color={"black"}>
-							{message.text}
+				// Other's message - Left side (gray)
+				<Flex gap={2} alignSelf="flex-start" maxW={messageMaxW} w="100%">
+					{!isMobile && <Avatar src={selectedConversation?.userProfilePic} w={8} h={8} />}
+					<Flex flexDirection="column" w="100%">
+						<Box
+							bg={otherMessageBg}
+							p={messagePadding}
+							borderRadius="lg"
+							borderBottomLeftRadius={isMobile ? "lg" : "md"}
+							boxShadow="sm"
+							border="1px solid"
+							borderColor={useColorModeValue("gray.200", "gray.600")}
+							w="fit-content"
+							maxW="100%"
+						>
+							<Text 
+								color={otherMessageColor} 
+								fontSize={isMobile ? "md" : "sm"}
+								wordBreak="break-word"
+							>
+								{message.text}
+							</Text>
+						</Box>
+						<Text 
+							fontSize="2xs" 
+							color={timestampColor} 
+							mt={1} 
+							ml={1}
+							opacity={0.8}
+						>
+							{formatMessageTimestamp(message.createdAt)}
 						</Text>
-					)}
-					{message.img && !imgLoaded && (
-						<Flex mt={5} w={"200px"}>
-							<Image
-								src={message.img}
-								hidden
-								onLoad={() => setImgLoaded(true)}
-								alt='Message image'
-								borderRadius={4}
-							/>
-							<Skeleton w={"200px"} h={"200px"} />
-						</Flex>
-					)}
-
-					{message.img && imgLoaded && (
-						<Flex mt={5} w={"200px"}>
-							<Image src={message.img} alt='Message image' borderRadius={4} />
-						</Flex>
-					)}
+					</Flex>
 				</Flex>
 			)}
-		</>
+		</Flex>
 	);
 };
 

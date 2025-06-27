@@ -55,9 +55,17 @@ async function sendMessage(req, res) {
             img = uploadedResponse.secure_url;
         }
 
+        console.log('=== Message Creation Debug ===');
+        console.log('req.user:', {
+            _id: req.user._id,
+            clerkId: req.user.clerkId,
+            name: req.user.name
+        });
+        console.log('Using sender ID:', senderId);
+        
         const newMessage = new Message({
             conversationId: conversation._id,
-            sender: senderId,
+            sender: senderId, // Use MongoDB ObjectId for consistency
             text: message,
             img: img || "",
         });
@@ -67,7 +75,7 @@ async function sendMessage(req, res) {
             conversation.updateOne({
                 lastMessage: {
                     text: message,
-                    sender: senderId,
+                    sender: senderId, // Use MongoDB ObjectId for consistency
                 },
             }),
         ]);
@@ -113,10 +121,14 @@ async function getMessages(req, res) {
         .sort({ createdAt: 1 })
         .lean();
 
+        // Get the other user's Clerk ID for comparison
+        const otherUser = await mongoose.model('User').findById(otherUserId).lean();
+        const otherUserClerkId = otherUser?.clerkId;
+        
         // Mark messages as seen if they're from the other user
         const unreadMessageIds = messages
             .filter(msg => 
-                msg.sender.toString() === otherUserId && 
+                msg.sender === otherUserClerkId && 
                 !msg.seen
             )
             .map(msg => msg._id);
@@ -134,7 +146,7 @@ async function getMessages(req, res) {
             );
 
             // Emit event to update the UI in real-time
-            const io = require('../socket/socket').io;
+            const { io } = await import('../socket/socket.js');
             io.to(userId.toString()).emit('messagesSeen', { conversationId: conversation._id });
         }
 
@@ -205,7 +217,7 @@ async function getConversations(req, res) {
                             participants: conv.participants,
                             lastMessage: conv.lastMessage,
                             updatedAt: conv.updatedAt,
-                            participantDetails: user,
+                            participantDetails: [user],
                             unreadCount: unreadCount || 0
                         };
                     } catch (error) {
@@ -242,4 +254,97 @@ async function getConversations(req, res) {
     }
 }
 
-export { getMessages, getConversations, sendMessage };
+async function startConversation(participantIds, caseId = null) {
+    try {
+        // Ensure we have exactly 2 participants
+        if (!Array.isArray(participantIds) || participantIds.length !== 2) {
+            throw new Error('A conversation must have exactly 2 participants');
+        }
+
+        // Sort participant IDs to ensure consistency
+        const [participant1, participant2] = participantIds.sort();
+        
+        // Check if conversation already exists
+        let conversation = await Conversation.findOne({
+            participants: { $all: [participant1, participant2] },
+            $or: [
+                { case: caseId },
+                { case: { $exists: !caseId } }
+            ]
+        });
+
+        // If conversation doesn't exist, create a new one
+        if (!conversation) {
+            conversation = new Conversation({
+                participants: [participant1, participant2],
+                lastMessage: {
+                    text: caseId ? 'Case discussion started' : 'Conversation started',
+                    sender: participant1,
+                    seen: false
+                },
+                case: caseId || undefined
+            });
+            await conversation.save();
+        }
+
+        return {
+            success: true,
+            conversationId: conversation._id,
+            isNew: !conversation.lastMessage
+        };
+    } catch (error) {
+        console.error('Error in startConversation:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to start conversation'
+        };
+    }
+}
+
+async function markMessagesAsSeen(req, res) {
+    try {
+        const { conversationId } = req.params;
+        const userId = req.user._id;
+
+        if (!conversationId) {
+            return res.status(400).json({ error: "Conversation ID is required" });
+        }
+
+        // Mark unseen messages from the other user as seen
+        const updateResult = await Message.updateMany(
+            {
+                conversationId,
+                sender: { $ne: userId },
+                seen: false
+            },
+            { $set: { seen: true } }
+        );
+
+        // Update lastMessage.seen in Conversation
+        await Conversation.updateOne(
+            { _id: conversationId },
+            { 'lastMessage.seen': true }
+        );
+
+        // Emit socket event to notify the other participant
+        const conversation = await Conversation.findById(conversationId).lean();
+        if (conversation) {
+            const otherParticipantId = conversation.participants.find(
+                (id) => id.toString() !== userId.toString()
+            );
+            if (otherParticipantId) {
+                const recipientSocketId = getRecipientSocketId(otherParticipantId.toString());
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('messagesSeen', { conversationId });
+                }
+            }
+        }
+
+        return res.status(200).json({ message: 'Messages marked as seen', modifiedCount: updateResult.modifiedCount });
+    } catch (error) {
+        console.error('Error in markMessagesAsSeen:', error);
+        return res.status(500).json({ error: 'Failed to mark messages as seen' });
+    }
+}
+
+export { getMessages, getConversations, sendMessage, startConversation, markMessagesAsSeen };

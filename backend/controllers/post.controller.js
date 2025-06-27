@@ -5,10 +5,35 @@ import { sendCommentNotificationEmail } from "../emails/emailHandlers.js";
 
 export const getFeedPosts = async (req, res) => {
 	try {
-		const posts = await Post.find({ author: { $in: [...req.user.connections, req.user._id] } })
+		let query = {};
+		
+		if (req.user) {
+			// Authenticated user: show posts from connections and own posts
+			query = { author: { $in: [...req.user.connections, req.user._id] } };
+		} else {
+			// Guest user: show recent public posts (limit to encourage signup)
+			query = {};
+		}
+
+		const posts = await Post.find(query)
 			.populate("author", "name username profilePicture headline")
 			.populate("comments.user", "name profilePicture")
-			.sort({ createdAt: -1 });
+			.sort({ createdAt: -1 })
+			.limit(req.user ? 50 : 10); // Limit posts for guests
+
+		// For guests, don't show sensitive data
+		if (!req.user) {
+			const sanitizedPosts = posts.map(post => ({
+				...post.toObject(),
+				likes: post.likes.length, // Show count only, not user IDs
+				comments: post.comments.map(comment => ({
+					content: comment.content,
+					user: comment.user,
+					createdAt: comment.createdAt
+				}))
+			}));
+			return res.status(200).json(sanitizedPosts);
+		}
 
 		res.status(200).json(posts);
 	} catch (error) {

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRecoilValue } from "recoil";
 import { io } from "socket.io-client";
-import userAtom from "../atoms/userAtom";
+import { useUser } from "@clerk/clerk-react";
 
 const SocketContext = createContext();
 
@@ -12,28 +12,47 @@ export const useSocket = () => {
 export const SocketContextProvider = ({ children }) => {
 	const [socket, setSocket] = useState(null);
 	const [onlineUsers, setOnlineUsers] = useState([]);
-	const user = useRecoilValue(userAtom);
+	const { user, isSignedIn } = useUser();
 
 	useEffect(() => {
-		if (!user?._id) return;
+		if (!user?.id || !isSignedIn) return;
 		
 		const socket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000", {
 			withCredentials: true,
-			extraHeaders: {
-				"Access-Control-Allow-Origin": "http://localhost:5173"
-			},
 			query: {
-				userId: user._id,
+				userId: user.id,
 			},
 		});
 
 		setSocket(socket);
 
-		socket.on("getOnlineUsers", (users) => {
+		// Handle online users updates
+		socket.on("onlineUsers", (users) => {
+			console.log('Online users updated:', users);
 			setOnlineUsers(users);
 		});
+
+		// Handle user coming online
+		socket.on("userOnline", ({ userId }) => {
+			setOnlineUsers(prev => [...prev.filter(id => id !== userId), userId]);
+		});
+
+		// Handle user going offline
+		socket.on("userOffline", ({ userId }) => {
+			setOnlineUsers(prev => prev.filter(id => id !== userId));
+		});
+
+		// Handle connection events for debugging
+		socket.on("connect", () => {
+			console.log("Socket connected:", socket.id);
+		});
+
+		socket.on("disconnect", () => {
+			console.log("Socket disconnected");
+		});
+
 		return () => socket && socket.close();
-	}, [user?._id]);
+	}, [user?.id, isSignedIn]);
 
 	return <SocketContext.Provider value={{ socket, onlineUsers }}>{children}</SocketContext.Provider>;
 };

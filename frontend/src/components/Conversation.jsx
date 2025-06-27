@@ -1,7 +1,7 @@
 import { Avatar, AvatarBadge, Box, Flex, Text, useColorModeValue } from "@chakra-ui/react";
-import { BsCheck2All, BsFillImageFill } from "react-icons/bs";
+import { BsCheck2All } from "react-icons/bs";
 import { useRecoilValue } from "recoil";
-import userAtom from "../atoms/userAtom";
+import { useUser } from "@clerk/clerk-react";
 import { formatDistanceToNow } from 'date-fns';
 
 const Conversation = ({ 
@@ -10,8 +10,19 @@ const Conversation = ({
   isSelected = false, 
   onClick = () => {}
 }) => {
-  const currentUser = useRecoilValue(userAtom);
+  const { user: currentUser } = useUser();
   const { lastMessage, userProfilePic, username, userId, _id } = conversation;
+  
+  // Move all useColorModeValue calls to the top to avoid hooks order issues
+  const selectedBg = useColorModeValue('blue.50', 'gray.700');
+  const hoverBg = useColorModeValue('gray.50', 'gray.800');
+  const avatarBg = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = useColorModeValue('white', 'gray.800');
+  const usernameColor = useColorModeValue('gray.800', 'white');
+  const timestampColor = useColorModeValue('gray.500', 'gray.400');
+  const messageColor = useColorModeValue('gray.600', 'gray.300');
+  const iconColor = useColorModeValue('gray.500', 'gray.400');
+  const checkIconColor = useColorModeValue('gray.500', 'gray.400');
   
   // Get the last message text or show a default
   const getMessagePreview = () => {
@@ -21,7 +32,6 @@ const Conversation = ({
         ? lastMessage.text.substring(0, 30) + '...' 
         : lastMessage.text;
     }
-    if (lastMessage.img) return 'Image';
     return 'New conversation';
   };
 
@@ -35,7 +45,7 @@ const Conversation = ({
     }
   };
 
-  const isOwnMessage = lastMessage?.sender === currentUser?._id;
+  const isOwnMessage = lastMessage?.sender === currentUser?.id;
   const isSeen = lastMessage?.seen;
 
   return (
@@ -45,11 +55,9 @@ const Conversation = ({
       gap={3}
       borderRadius="md"
       cursor="pointer"
-      bg={isSelected ? useColorModeValue('blue.50', 'gray.700') : 'transparent'}
+      bg={isSelected ? selectedBg : 'transparent'}
       _hover={{
-        bg: isSelected 
-          ? useColorModeValue('blue.50', 'gray.700')
-          : useColorModeValue('gray.50', 'gray.800'),
+        bg: isSelected ? selectedBg : hoverBg,
       }}
       transition="background-color 0.2s"
       onClick={onClick}
@@ -61,7 +69,7 @@ const Conversation = ({
           src={userProfilePic} 
           name={username}
           size="md"
-          bg={useColorModeValue('gray.200', 'gray.600')}
+          bg={avatarBg}
         />
         {isOnline && (
           <Box
@@ -73,7 +81,7 @@ const Conversation = ({
             bg="green.500"
             borderRadius="full"
             borderWidth="2px"
-            borderColor={useColorModeValue('white', 'gray.800')}
+            borderColor={borderColor}
           />
         )}
       </Box>
@@ -85,12 +93,12 @@ const Conversation = ({
             fontWeight="600" 
             fontSize="sm"
             isTruncated
-            color={useColorModeValue('gray.800', 'white')}
+            color={usernameColor}
           >
             {username}
           </Text>
           {lastMessage?.createdAt && (
-            <Text fontSize="xs" color={useColorModeValue('gray.500', 'gray.400')}>
+            <Text fontSize="xs" color={timestampColor}>
               {formatTimestamp(lastMessage.createdAt)}
             </Text>
           )}
@@ -98,21 +106,18 @@ const Conversation = ({
         
         <Flex align="center" gap={1} mt={1}>
           {isOwnMessage && (
-            <Box color={isSeen ? 'blue.400' : useColorModeValue('gray.500', 'gray.400')}>
+            <Box color={isSeen ? 'blue.400' : checkIconColor}>
               <BsCheck2All size={14} />
             </Box>
           )}
           <Text 
             fontSize="sm" 
-            color={useColorModeValue('gray.600', 'gray.300')}
+            color={messageColor}
             isTruncated
             flex={1}
           >
             {getMessagePreview()}
           </Text>
-          {!lastMessage?.text && lastMessage?.img && (
-            <BsFillImageFill size={12} color={useColorModeValue('gray.500', 'gray.400')} />
-          )}
         </Flex>
       </Flex>
 

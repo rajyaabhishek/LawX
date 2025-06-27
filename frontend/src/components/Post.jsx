@@ -1,24 +1,51 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { 
+	Box, 
+	Flex, 
+	Avatar, 
+	Text, 
+	Image, 
+	Button, 
+	VStack, 
+	HStack, 
+	Input, 
+	Divider,
+	useColorModeValue,
+	IconButton,
+	Badge
+} from "@chakra-ui/react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { Link, useParams } from "react-router-dom";
 import { Loader, MessageCircle, Send, Share2, ThumbsUp, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+import { useAuthContext } from "../context/AuthContext";
 import PostAction from "./PostAction";
 
 const Post = ({ post }) => {
+	const { currentUser, isSignedIn, isGuestMode } = useAuthContext();
 	const { postId } = useParams();
 
-	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 	const [showComments, setShowComments] = useState(false);
 	const [newComment, setNewComment] = useState("");
 	const [comments, setComments] = useState(post.comments || []);
-	const isOwner = authUser._id === post.author._id;
-	const isLiked = post.likes.includes(authUser._id);
+	
+	// Safe user checks for guest mode
+	const isOwner = isSignedIn && currentUser && post.author && currentUser._id === post.author._id;
+	const isLiked = isSignedIn && currentUser && Array.isArray(post.likes) 
+		? post.likes.includes(currentUser._id) 
+		: false;
 
 	const queryClient = useQueryClient();
+
+	// Theme colors
+	const cardBg = useColorModeValue("white", "gray.800");
+	const textColor = useColorModeValue("gray.800", "white");
+	const mutedText = useColorModeValue("gray.600", "gray.400");
+	const commentBg = useColorModeValue("gray.50", "gray.700");
+	const inputBg = useColorModeValue("gray.100", "gray.600");
 
 	const { mutate: deletePost, isPending: isDeletingPost } = useMutation({
 		mutationFn: async () => {
@@ -62,12 +89,28 @@ const Post = ({ post }) => {
 	};
 
 	const handleLikePost = async () => {
-		if (isLikingPost) return;
+		if (isLikingPost || !isSignedIn) return;
+		
+		if (isGuestMode) {
+			// Trigger auth modal for guest users
+			window.dispatchEvent(new CustomEvent('showAuthModal', { detail: { mode: 'signup' } }));
+			toast.error("Please sign up to like posts");
+			return;
+		}
+		
 		likePost();
 	};
 
 	const handleAddComment = async (e) => {
 		e.preventDefault();
+		
+		if (!isSignedIn) {
+			// Trigger auth modal for guest users
+			window.dispatchEvent(new CustomEvent('showAuthModal', { detail: { mode: 'signup' } }));
+			toast.error("Please sign up to comment");
+			return;
+		}
+		
 		if (newComment.trim()) {
 			createComment(newComment);
 			setNewComment("");
@@ -76,9 +119,9 @@ const Post = ({ post }) => {
 				{
 					content: newComment,
 					user: {
-						_id: authUser._id,
-						name: authUser.name,
-						profilePicture: authUser.profilePicture,
+						_id: currentUser._id,
+						name: currentUser.name,
+						profilePicture: currentUser.profilePicture,
 					},
 					createdAt: new Date(),
 				},
@@ -86,97 +129,247 @@ const Post = ({ post }) => {
 		}
 	};
 
+	const handleCommentClick = () => {
+		if (!isSignedIn) {
+			// Trigger auth modal for guest users
+			window.dispatchEvent(new CustomEvent('showAuthModal', { detail: { mode: 'signup' } }));
+			toast.error("Please sign up to view comments");
+			return;
+		}
+		setShowComments(!showComments);
+	};
+
+	// NEW: Share post handler
+	const handleSharePost = () => {
+		if (!isSignedIn) {
+			// Trigger auth modal for guest users
+			window.dispatchEvent(new CustomEvent('showAuthModal', { detail: { mode: 'signup' } }));
+			toast.error("Please sign up to share posts");
+			return;
+		}
+
+		const shareUrl = `${window.location.origin}/post/${post._id}`;
+		const shareData = {
+			title: "Check out this post on LawX",
+			text: post?.content?.slice(0, 100) || "Interesting post on LawX",
+			url: shareUrl,
+		};
+
+		if (navigator.share) {
+			navigator.share(shareData)
+				.then(() => {
+					toast.success("Post shared successfully");
+				})
+				.catch((err) => {
+					// If user cancels share, silently ignore
+					if (err && err.name !== "AbortError") {
+						toast.error("Unable to share post");
+					}
+				});
+		} else if (navigator.clipboard) {
+			navigator.clipboard.writeText(shareUrl)
+				.then(() => {
+					toast.success("Link copied to clipboard");
+				})
+				.catch(() => {
+					toast.error("Unable to copy link to clipboard");
+				});
+		} else {
+			// Fallback method using a temporary textarea element
+			try {
+				const textarea = document.createElement("textarea");
+				textarea.value = shareUrl;
+				document.body.appendChild(textarea);
+				textarea.select();
+				document.execCommand("copy");
+				document.body.removeChild(textarea);
+				toast.success("Link copied to clipboard");
+			} catch {
+				toast.error("Unable to share post");
+			}
+		}
+	};
+
+	// Safe data access
+	const likesCount = typeof post.likes === 'number' ? post.likes : (Array.isArray(post.likes) ? post.likes.length : 0);
+
 	return (
-		<div className='bg-secondary rounded-lg shadow mb-4'>
-			<div className='p-4'>
-				<div className='flex items-center justify-between mb-4'>
-					<div className='flex items-center'>
-						<Link to={`/profile/${post?.author?.username}`}>
-							<img
-								src={post.author.profilePicture || "/avatar.png"}
-								alt={post.author.name}
-								className='size-10 rounded-full mr-3'
-							/>
-						</Link>
-
-						<div>
-							<Link to={`/profile/${post?.author?.username}`}>
-								<h3 className='font-semibold'>{post.author.name}</h3>
-							</Link>
-							<p className='text-xs text-info'>{post.author.headline}</p>
-							<p className='text-xs text-info'>
-								{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-							</p>
-						</div>
-					</div>
-					{isOwner && (
-						<button onClick={handleDeletePost} className='text-red-500 hover:text-red-700'>
-							{isDeletingPost ? <Loader size={18} className='animate-spin' /> : <Trash2 size={18} />}
-						</button>
-					)}
-				</div>
-				<p className='mb-4'>{post.content}</p>
-				{post.image && <img src={post.image} alt='Post content' className='rounded-lg w-full mb-4' />}
-
-				<div className='flex justify-between text-info'>
-					<PostAction
-						icon={<ThumbsUp size={18} className={isLiked ? "text-blue-500  fill-blue-300" : ""} />}
-						text={`Like (${post.likes.length})`}
-						onClick={handleLikePost}
-					/>
-
-					<PostAction
-						icon={<MessageCircle size={18} />}
-						text={`Comment (${comments.length})`}
-						onClick={() => setShowComments(!showComments)}
-					/>
-					<PostAction icon={<Share2 size={18} />} text='Share' />
-				</div>
-			</div>
-
-			{showComments && (
-				<div className='px-4 pb-4'>
-					<div className='mb-4 max-h-60 overflow-y-auto'>
-						{comments.map((comment) => (
-							<div key={comment._id} className='mb-2 bg-base-100 p-2 rounded flex items-start'>
-								<img
-									src={comment.user.profilePicture || "/avatar.png"}
-									alt={comment.user.name}
-									className='w-8 h-8 rounded-full mr-2 flex-shrink-0'
-								/>
-								<div className='flex-grow'>
-									<div className='flex items-center mb-1'>
-										<span className='font-semibold mr-2'>{comment.user.name}</span>
-										<span className='text-xs text-info'>
-											{formatDistanceToNow(new Date(comment.createdAt))}
-										</span>
-									</div>
-									<p>{comment.content}</p>
-								</div>
-							</div>
-						))}
-					</div>
-
-					<form onSubmit={handleAddComment} className='flex items-center'>
-						<input
-							type='text'
-							value={newComment}
-							onChange={(e) => setNewComment(e.target.value)}
-							placeholder='Add a comment...'
-							className='flex-grow p-2 rounded-l-full bg-base-100 focus:outline-none focus:ring-2 focus:ring-primary'
+		<Box 
+			bg={cardBg} 
+			borderRadius="lg" 
+			boxShadow="sm" 
+			border="1px"
+			borderColor={useColorModeValue("gray.200", "gray.700")}
+			overflow="hidden"
+			w="100%"
+		>
+			<Box p={{ base: 3, md: 4 }}>
+				<Flex justify="space-between" align="flex-start" mb={4}>
+					<Flex align="center">
+						<Avatar
+							as={Link}
+							to={`/profile/${post?.author?.username}`}
+							src={post.author?.profilePicture || "/avatar.png"}
+							name={post.author?.name || "User"}
+							size={{ base: "sm", md: "md" }}
+							mr={{ base: 2, md: 3 }}
 						/>
+						<VStack align="flex-start" spacing={0}>
+							<Text 
+								as={Link} 
+								to={`/profile/${post?.author?.username}`}
+								fontWeight="semibold" 
+								color={textColor}
+								fontSize={{ base: "sm", md: "md" }}
+								_hover={{ color: "blue.500" }}
+							>
+								{post.author?.name || "Unknown User"}
+							</Text>
+							<Text fontSize="xs" color={mutedText} display={{ base: "none", sm: "block" }}>
+								{post.author?.headline || ""}
+							</Text>
+							<Text fontSize="xs" color={mutedText}>
+								{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+							</Text>
+						</VStack>
+					</Flex>
+					{isOwner && (
+						<IconButton
+							aria-label="Delete post"
+							icon={isDeletingPost ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+							onClick={handleDeletePost}
+							variant="ghost"
+							colorScheme="red"
+							size="sm"
+						/>
+					)}
+				</Flex>
+				
+				<Text 
+					mb={4} 
+					color={textColor}
+					fontSize={{ base: "sm", md: "md" }}
+					lineHeight="1.5"
+				>
+					{post.content}
+				</Text>
+				
+				{post.image && (
+					<Image 
+						src={post.image} 
+						alt="Post content" 
+						borderRadius="lg" 
+						w="full" 
+						mb={4}
+						maxH={{ base: "300px", md: "400px" }}
+						objectFit="cover"
+					/>
+				)}
 
-						<button
-							type='submit'
-							className='bg-primary text-white p-2 rounded-r-full hover:bg-primary-dark transition duration-300'
-							disabled={isAddingComment}
-						>
-							{isAddingComment ? <Loader size={18} className='animate-spin' /> : <Send size={18} />}
-						</button>
+				<Flex 
+					justify="space-between" 
+					color={mutedText}
+					direction={{ base: "row", md: "row" }}
+					wrap="wrap"
+					gap={{ base: 1, md: 2 }}
+				>
+					<PostAction
+						icon={<ThumbsUp size={16} className={isLiked ? "text-blue-500 fill-blue-300" : ""} />}
+						text={`Like (${likesCount})`}
+						onClick={handleLikePost}
+						isActive={isLiked}
+					/>
+
+					<PostAction
+						icon={<MessageCircle size={16} />}
+						text={`Comment (${comments.length})`}
+						onClick={handleCommentClick}
+					/>
+					<PostAction 
+						icon={<Share2 size={16} />} 
+						text="Share" 
+						onClick={handleSharePost}
+					/>
+				</Flex>
+			</Box>
+
+			{showComments && isSignedIn && (
+				<Box px={{ base: 3, md: 4 }} pb={{ base: 3, md: 4 }}>
+					<Divider mb={4} />
+					<VStack spacing={3} align="stretch" mb={4} maxH="60" overflowY="auto">
+						{comments.map((comment) => (
+							<Flex key={comment._id || Math.random()} bg={commentBg} p={{ base: 2, md: 3 }} borderRadius="md" align="flex-start">
+								<Avatar
+									src={comment.user?.profilePicture || "/avatar.png"}
+									name={comment.user?.name || "User"}
+									size="sm"
+									mr={{ base: 2, md: 3 }}
+									flexShrink={0}
+								/>
+								<VStack align="flex-start" spacing={1} flex={1}>
+									<HStack spacing={2} flexWrap="wrap">
+										<Text fontWeight="semibold" fontSize="sm" color={textColor}>
+											{comment.user?.name || "Unknown User"}
+										</Text>
+										<Text fontSize="xs" color={mutedText}>
+											{formatDistanceToNow(new Date(comment.createdAt))}
+										</Text>
+									</HStack>
+									<Text fontSize="sm" color={textColor} wordBreak="break-word">
+										{comment.content}
+									</Text>
+								</VStack>
+							</Flex>
+						))}
+					</VStack>
+
+					<form onSubmit={handleAddComment}>
+						<Flex direction={{ base: "column", sm: "row" }} gap={{ base: 2, sm: 0 }}>
+							<Input
+								value={newComment}
+								onChange={(e) => setNewComment(e.target.value)}
+								placeholder="Add a comment..."
+								bg={inputBg}
+								border="none"
+								borderRadius={{ base: "md", sm: "full" }}
+								borderLeftRadius={{ base: "md", sm: "full" }}
+								borderRightRadius={{ base: "md", sm: "none" }}
+								_focus={{
+									bg: useColorModeValue("white", "gray.500"),
+									borderColor: "blue.500",
+								}}
+								flex={1}
+								fontSize={{ base: "sm", md: "md" }}
+							/>
+							<Button
+								type="submit"
+								colorScheme="blue"
+								borderRadius={{ base: "md", sm: "full" }}
+								borderLeftRadius={{ base: "md", sm: "none" }}
+								borderRightRadius={{ base: "md", sm: "full" }}
+								isLoading={isAddingComment}
+								loadingText="Posting..."
+								px={{ base: 4, md: 6 }}
+								size={{ base: "sm", md: "md" }}
+								w={{ base: "100%", sm: "auto" }}
+							>
+								Post
+							</Button>
+						</Flex>
 					</form>
-				</div>
+				</Box>
 			)}
-		</div>
+			
+			{/* Guest mode message for interactions */}
+			{isGuestMode && (
+				<Box px={4} pb={4} textAlign="center">
+					<Text fontSize="sm" color={mutedText}>
+						Sign up to interact with posts - like, comment, and share!
+					</Text>
+				</Box>
+			)}
+		</Box>
 	);
 };
+
 export default Post;

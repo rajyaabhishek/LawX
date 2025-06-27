@@ -23,18 +23,32 @@ const SkillsSection = ({ userData, isOwnProfile, onSave }) => {
 	};
 
 	return (
-		<div className='bg-white shadow rounded-lg p-6'>
-			<h2 className='text-xl font-semibold mb-4'>Skills</h2>
-			<div className='flex flex-wrap'>
+		<div className='bg-white shadow rounded-xl p-4'>
+			<h2 className='text-lg font-semibold mb-2'>Skills & Expertise</h2>
+			
+			{skills.length === 0 && !isEditing && (
+				<div className="text-center py-3">
+					<p className='text-gray-500 mb-1 text-sm'>No skills added yet.</p>
+					{isOwnProfile && (
+						<p className='text-gray-400 text-xs'>Add your professional skills and expertise to showcase your capabilities.</p>
+					)}
+				</div>
+			)}
+			
+			<div className='flex flex-wrap gap-2 mb-3'>
 				{skills.map((skill, index) => (
 					<span
 						key={index}
-						className='bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm mr-2 mb-2 flex items-center'
+						className='bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 border border-gray-200'
 					>
 						{skill}
 						{isEditing && (
-							<button onClick={() => handleDeleteSkill(skill)} className='ml-2 text-red-500'>
-								<X size={14} />
+							<button 
+								onClick={() => handleDeleteSkill(skill)} 
+								className='ml-1 text-gray-500 hover:text-red-600 rounded-full p-1 transition-all duration-200'
+								title="Remove skill"
+							>
+								<X size={12} />
 							</button>
 						)}
 					</span>
@@ -42,41 +56,50 @@ const SkillsSection = ({ userData, isOwnProfile, onSave }) => {
 			</div>
 
 			{isEditing && (
-				<div className='mt-4 flex'>
-					<input
-						type='text'
-						placeholder='New Skill'
-						value={newSkill}
-						onChange={(e) => setNewSkill(e.target.value)}
-						className='flex-grow p-2 border rounded-l'
-					/>
-					<button
-						onClick={handleAddSkill}
-						className='bg-primary text-white py-2 px-4 rounded-r hover:bg-primary-dark transition duration-300'
-					>
-						Add Skill
-					</button>
-				</div>
-			)}
-
-			{isOwnProfile && (
-				<>
-					{isEditing ? (
+				<div className='space-y-3'>
+					<div className='flex gap-2'>
+						<input
+							type='text'
+							placeholder='Add a skill (e.g., Legal Research, Contract Law, Litigation)'
+							value={newSkill}
+							onChange={(e) => setNewSkill(e.target.value)}
+							className='flex-1 p-2 border border-gray-300 rounded-lg focus:border-gray-500 focus:outline-none transition-all duration-200 text-sm'
+							onKeyPress={(e) => e.key === 'Enter' && handleAddSkill()}
+						/>
+						<button
+							onClick={handleAddSkill}
+							className='px-4 py-2 bg-gray-300 hover:bg-gray-400 font-medium rounded-lg transition-all duration-200 text-sm'
+							style={{ color: '#1f2937' }}
+						>
+							Add Skill
+						</button>
+					</div>
+					<div className="flex gap-2">
 						<button
 							onClick={handleSave}
-							className='mt-4 bg-primary text-white py-2 px-4 rounded hover:bg-primary-dark transition duration-300'
+							className='px-6 py-2 bg-gray-300 hover:bg-gray-400 font-medium rounded-lg transition-all duration-200'
+							style={{ color: '#1f2937' }}
 						>
 							Save Changes
 						</button>
-					) : (
 						<button
-							onClick={() => setIsEditing(true)}
-							className='mt-4 text-primary hover:text-primary-dark transition duration-300'
+							onClick={() => setIsEditing(false)}
+							className='px-6 py-2 bg-gray-200 hover:bg-gray-300 font-medium rounded-lg transition-all duration-200'
+							style={{ color: '#374151' }}
 						>
-							Edit Skills
+							Cancel
 						</button>
-					)}
-				</>
+					</div>
+				</div>
+			)}
+
+			{isOwnProfile && !isEditing && (
+				<button
+					onClick={() => setIsEditing(true)}
+					className='text-gray-600 hover:text-gray-800 font-medium transition-all duration-200'
+				>
+					{skills.length > 0 ? 'Edit Skills' : 'Add Skills'}
+				</button>
 			)}
 		</div>
 	);

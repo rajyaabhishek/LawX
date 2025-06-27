@@ -1,110 +1,364 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, Home, LogOut, MessageSquare, User, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { 
+	Box, 
+	Flex, 
+	Image, 
+	Button, 
+	Text, 
+	useColorModeValue,
+	useColorMode,
+	Badge,
+	Icon,
+	HStack,
+	IconButton,
+	Input,
+	InputGroup,
+	InputLeftElement,
+	useBreakpointValue
+} from "@chakra-ui/react";
+import { Bell, MessageSquare, Crown, Sun, Moon, Search, User, Menu, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser, useClerk, UserButton } from "@clerk/clerk-react";
 import { axiosInstance } from "../../lib/axios";
+import { useState } from "react";
+import { useChatPopup } from "../../context/ChatContext";
 
-const Navbar = () => {
-	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+const Navbar = ({ onMenuClick, isSidebarOpen }) => {
+	const { isSignedIn, user } = useUser();
+	const { signOut } = useClerk();
 	const queryClient = useQueryClient();
+
+	const { toggleChat } = useChatPopup();
+
+	const [searchQuery, setSearchQuery] = useState("");
+	const { colorMode, toggleColorMode } = useColorMode();
+	const isDark = colorMode === "dark";
+	const navigate = useNavigate();
+	const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+	// Responsive breakpoint values
+	const showMobileMenu = useBreakpointValue({ base: true, md: false });
+	const showDesktopSearch = useBreakpointValue({ base: false, md: true });
+	const buttonSize = useBreakpointValue({ base: "sm", md: "md" });
+	const iconSize = useBreakpointValue({ base: 16, md: 20 });
+
+	// Debug logging
+	console.log('Navbar render - user:', user, 'isSignedIn:', isSignedIn);
 
 	const { data: notifications } = useQuery({
 		queryKey: ["notifications"],
 		queryFn: async () => axiosInstance.get("/notifications"),
-		enabled: !!authUser,
+		enabled: !!isSignedIn,
 	});
 
-	const { data: connectionRequests } = useQuery({
-		queryKey: ["connectionRequests"],
-		queryFn: async () => axiosInstance.get("/connections/requests"),
-		enabled: !!authUser,
-	});
+	// Theme values
+	const bgColor = useColorModeValue("white", "gray.800");
+	const textColor = useColorModeValue("gray.700", "white");
+	const hoverColor = useColorModeValue("gray.900", "gray.300");
+	const inputBg = useColorModeValue("gray.50", "gray.700");
+	const placeholderColor = useColorModeValue("gray.500", "gray.400");
 
-	const { mutate: logout } = useMutation({
-		mutationFn: () => axiosInstance.post("/auth/logout"),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["authUser"] });
-		},
-	});
+	const handleSearchSubmit = (e) => {
+		e.preventDefault();
+		if (searchQuery.trim()) {
+			// Navigate to search page with search query and default to cases tab
+			navigate(`/search?q=${encodeURIComponent(searchQuery)}&tab=cases`);
+			// Close mobile search after navigation
+			setIsSearchExpanded(false);
+		} else {
+			// Navigate to search page without query
+			navigate('/search');
+			setIsSearchExpanded(false);
+		}
+	};
+
+	const toggleMobileSearch = () => {
+		setIsSearchExpanded(!isSearchExpanded);
+		if (!isSearchExpanded) {
+			// Focus the input when expanding
+			setTimeout(() => {
+				const input = document.querySelector('#mobile-search-input');
+				if (input) input.focus();
+			}, 100);
+		}
+	};
 
 	const unreadNotificationCount = notifications?.data.filter((notif) => !notif.read).length;
-	const unreadConnectionRequestsCount = connectionRequests?.data?.length;
 
 	return (
-		<nav className='bg-secondary shadow-md sticky top-0 z-10'>
-			<div className='max-w-7xl mx-auto px-4'>
-				<div className='flex justify-between items-center py-3'>
-					<div className='flex items-center space-x-4'>
-						<Link to='/'>
-							<img className='h-8 rounded' src='/small-logo.png' alt='LawX' />
-						</Link>
-					</div>
-					<div className='flex items-center gap-2 md:gap-6'>
-						{authUser ? (
-							<>
-								<Link to={"/"} className='text-neutral flex flex-col items-center'>
-									<Home size={20} />
-									<span className='text-xs hidden md:block'>Home</span>
-								</Link>
-								<Link to='/network' className='text-neutral flex flex-col items-center relative'>
-									<Users size={20} />
-									<span className='text-xs hidden md:block'>My Network</span>
-									{unreadConnectionRequestsCount > 0 && (
-										<span
-											className='absolute -top-1 -right-1 md:right-4 bg-linkedin-500 text-white text-xs 
-										rounded-full size-3 md:size-4 flex items-center justify-center'
+		<Box 
+			as="nav" 
+			bg={bgColor} 
+			position="fixed" 
+			top={0} 
+			left={0}
+			right={0}
+			zIndex={1000}
+			borderBottom="1px solid"
+			borderBottomColor={useColorModeValue("gray.200", "gray.700")}
+			h="60px"
+		>
+					<Box maxW="100%" px={{ base: 2, md: 4 }} h="100%">
+			<Flex justify="space-between" align="center" h="100%">
+				<Flex align="center" spacing={{ base: 2, md: 4 }}>
+					{/* Mobile Menu Button */}
+					{isSignedIn && showMobileMenu && !isSearchExpanded && (
+						<IconButton
+							aria-label="Menu"
+							icon={<Icon as={Menu} size={iconSize} />}
+							variant="ghost"
+							color={textColor}
+							size={buttonSize}
+							onClick={onMenuClick}
+							_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+						/>
+					)}
+					
+					{/* Mobile Search Back Button */}
+					{showMobileMenu && isSearchExpanded && (
+						<IconButton
+							aria-label="Close search"
+							icon={<Icon as={X} size={iconSize} />}
+							variant="ghost"
+							color={textColor}
+							size={buttonSize}
+							onClick={() => setIsSearchExpanded(false)}
+							_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+						/>
+					)}
+					
+					<Box as={Link} to="/" display="flex" alignItems="center" gap={2}>
+						<Image h={{ base: 6, md: 8 }} borderRadius="md" src="/small-logo.png" alt="LawX" />
+						<Text 
+							fontSize={{ base: "lg", md: "xl" }}
+							fontWeight="bold" 
+							color={textColor}
+							display={{ base: isSearchExpanded ? "none" : "none", sm: isSearchExpanded ? "none" : "block" }}
+						>
+							LawX
+						</Text>
+					</Box>
+					
+					{/* Desktop Search Bar */}
+					{isSignedIn && showDesktopSearch && (
+						<Box ml={8}>
+							<form onSubmit={handleSearchSubmit}>
+								<InputGroup size="md" maxW="500px">
+									<InputLeftElement pointerEvents="none">
+										<Icon as={Search} color={placeholderColor} />
+									</InputLeftElement>
+									<Input
+										placeholder="Search LawX"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										bg={inputBg}
+										border="1px solid"
+										borderColor={useColorModeValue("gray.300", "gray.600")}
+										borderRadius="full"
+										_hover={{ 
+											borderColor: useColorModeValue("gray.400", "gray.500"),
+											bg: useColorModeValue("white", "gray.600")
+										}}
+										_focus={{ 
+											borderColor: "blue.500", 
+											boxShadow: "0 0 0 1px blue.500",
+											bg: useColorModeValue("white", "gray.600")
+										}}
+										fontSize="14px"
+									/>
+								</InputGroup>
+							</form>
+						</Box>
+					)}
+
+					{/* Mobile Expanded Search Bar */}
+					{isSignedIn && showMobileMenu && isSearchExpanded && (
+						<Box flex="1" ml={2}>
+							<form onSubmit={handleSearchSubmit}>
+								<InputGroup size="md">
+									<InputLeftElement pointerEvents="none">
+										<Icon as={Search} color={placeholderColor} />
+									</InputLeftElement>
+									<Input
+										id="mobile-search-input"
+										placeholder="Search LawX"
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										bg={inputBg}
+										border="1px solid"
+										borderColor={useColorModeValue("gray.300", "gray.600")}
+										borderRadius="full"
+										_hover={{ 
+											borderColor: useColorModeValue("gray.400", "gray.500"),
+											bg: useColorModeValue("white", "gray.600")
+										}}
+										_focus={{ 
+											borderColor: "blue.500", 
+											boxShadow: "0 0 0 1px blue.500",
+											bg: useColorModeValue("white", "gray.600")
+										}}
+										fontSize="14px"
+									/>
+								</InputGroup>
+							</form>
+						</Box>
+					)}
+				</Flex>
+					
+									<HStack spacing={{ base: 1, md: 4 }}>
+					{isSignedIn ? (
+						<>
+							{/* Mobile Search Button */}
+							{!showDesktopSearch && !isSearchExpanded && (
+								<IconButton
+									aria-label="Search"
+									icon={<Search size={iconSize} />}
+									variant="ghost"
+									color={textColor}
+									size={buttonSize}
+									onClick={toggleMobileSearch}
+									_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+								/>
+							)}
+
+							{/* Hide other icons when mobile search is expanded */}
+							{!isSearchExpanded && (
+								<>
+									<IconButton
+										as={Link}
+										to="/notifications"
+										aria-label="Notifications"
+										icon={<Bell size={iconSize} />}
+										variant="ghost"
+										color={textColor}
+										size={buttonSize}
+										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+										position="relative"
+									>
+										{unreadNotificationCount > 0 && (
+											<Badge
+												position="absolute"
+												top="6px"
+												right="6px"
+												bg="red.500"
+												color="white"
+												fontSize="xs"
+												borderRadius="full"
+												minW={4}
+												h={4}
+												display="flex"
+												alignItems="center"
+												justifyContent="center"
+											>
+												{unreadNotificationCount}
+											</Badge>
+										)}
+									</IconButton>
+
+									<IconButton
+										aria-label="Chat"
+										icon={<MessageSquare size={iconSize} />}
+										variant="ghost"
+										color={textColor}
+										size={buttonSize}
+										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+										onClick={toggleChat}
+									/>
+
+									{/* Premium Badge - Hide on very small screens */}
+									{user?.publicMetadata?.isPremium && (
+										<Badge 
+											colorScheme="yellow" 
+											variant="solid"
+											fontSize="xs"
+											px={2}
+											py={1}
+											borderRadius="full"
+											display={{ base: "none", sm: "flex" }}
 										>
-											{unreadConnectionRequestsCount}
-										</span>
+											<Icon as={Crown} boxSize={3} mr={1} />
+											Premium
+										</Badge>
 									)}
-								</Link>
-								<Link to='/notifications' className='text-neutral flex flex-col items-center relative'>
-									<Bell size={20} />
-									<span className='text-xs hidden md:block'>Notifications</span>
-									{unreadNotificationCount > 0 && (
-										<span
-											className='absolute -top-1 -right-1 md:right-4 bg-linkedin-500 text-white text-xs 
-										rounded-full size-3 md:size-4 flex items-center justify-center'
+
+									{/* Premium Upgrade Button - Responsive */}
+									{!user?.publicMetadata?.isPremium && (
+										<Button
+											size={buttonSize}
+											colorScheme="yellow"
+											variant="outline"
+											leftIcon={<Crown size={showMobileMenu ? 14 : 16} />}
+											onClick={() => navigate('/premium')}
+											fontSize="xs"
+											px={showMobileMenu ? 2 : 3}
+											display={{ base: "none", sm: "flex" }}
 										>
-											{unreadNotificationCount}
-										</span>
+											{showMobileMenu ? "Premium" : "Get Premium"}
+										</Button>
 									)}
-								</Link>
-								<Link
-                                   to="/chat"
-                                   className='text-neutral flex flex-col items-center'
-                                >
-                                <MessageSquare size={20} />
-                                <span className='text-xs hidden md:block'>Chat</span>
-                                </Link>
-								<Link
-									to={`/profile/${authUser.username}`}
-									className='text-neutral flex flex-col items-center'
-								>
-									<User size={20} />
-									<span className='text-xs hidden md:block'>Me</span>
-								</Link>
-								<button
-									className='flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800'
-									onClick={() => logout()}
-								>
-									<LogOut size={20} />
-									<span className='hidden md:inline'>Logout</span>
-								</button>
-							</>
-						) : (
-							<>
-								<Link to='/login' className='btn btn-ghost'>
-									Sign In
-								</Link>
-								<Link to='/signup' className='btn btn-primary'>
-									Join now
-								</Link>
-							</>
-						)}
-					</div>
-				</div>
-			</div>
-		</nav>
+
+									{/* Color Mode Toggle */}
+									<IconButton
+										aria-label="Toggle color mode"
+										icon={colorMode === 'light' ? <Moon size={iconSize} /> : <Sun size={iconSize} />}
+										onClick={toggleColorMode}
+										variant="ghost"
+										color={textColor}
+										size={buttonSize}
+										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+									/>
+
+									{/* Clerk UserButton - replaces custom profile section */}
+									<UserButton 
+										appearance={{
+											elements: {
+												avatarBox: `${showMobileMenu ? 'w-7 h-7' : 'w-8 h-8'} shadow-md border-2 ${isDark ? "border-gray-600" : "border-white"}`,
+												userButtonPopoverCard: `shadow-xl border ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-100 bg-white"}`,
+												userButtonPopoverActionButton: `${isDark ? "hover:bg-gray-700" : "hover:bg-gray-50"} transition-colors`,
+												userButtonPopoverActionButtonText: `${isDark ? "text-gray-200" : "text-gray-700"} font-medium`,
+												userButtonPopoverActionButtonIcon: isDark ? "text-gray-400" : "text-gray-500"
+											},
+											variables: {
+												colorPrimary: "#3B82F6"
+											},
+											localization: {
+												userButtonPopoverActionButton__manageAccount: "Manage Profile"
+											}
+										}}
+										userProfileMode="navigation"
+										userProfileUrl="/profile"
+										afterSignOutUrl="/"
+										showName={false}
+									/>
+								</>
+							)}
+						</>
+					) : (
+						<>
+							{/* Color Mode Toggle for non-authenticated users */}
+							<IconButton
+								aria-label="Toggle color mode"
+								icon={colorMode === 'light' ? <Moon size={iconSize} /> : <Sun size={iconSize} />}
+								onClick={toggleColorMode}
+								variant="ghost"
+								color={textColor}
+								size={buttonSize}
+								_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+							/>
+						</>
+					)}
+				</HStack>
+				</Flex>
+			</Box>
+
+
+
+			{/* Modals */}
+			{/* <PremiumUpgradeModal 
+				isOpen={isPremiumModalOpen} 
+				onClose={() => setIsPremiumModalOpen(false)} 
+			/> */}
+		</Box>
 	);
 };
 export default Navbar;

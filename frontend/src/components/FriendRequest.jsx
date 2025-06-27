@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../lib/axios";
-import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
 const FriendRequest = ({ request }) => {
@@ -9,22 +8,22 @@ const FriendRequest = ({ request }) => {
 	const { mutate: acceptConnectionRequest } = useMutation({
 		mutationFn: (requestId) => axiosInstance.put(`/connections/accept/${requestId}`),
 		onSuccess: () => {
-			toast.success("Connection request accepted");
+			// Removed toast notification as requested
 			queryClient.invalidateQueries({ queryKey: ["connectionRequests"] });
 		},
 		onError: (error) => {
-			toast.error(error.response.data.error);
+			console.error("Error accepting connection:", error.response?.data?.error);
 		},
 	});
 
 	const { mutate: rejectConnectionRequest } = useMutation({
 		mutationFn: (requestId) => axiosInstance.put(`/connections/reject/${requestId}`),
 		onSuccess: () => {
-			toast.success("Connection request rejected");
+			// Removed toast notification as requested
 			queryClient.invalidateQueries({ queryKey: ["connectionRequests"] });
 		},
 		onError: (error) => {
-			toast.error(error.response.data.error);
+			console.error("Error rejecting connection:", error.response?.data?.error);
 		},
 	});
 
@@ -49,7 +48,7 @@ const FriendRequest = ({ request }) => {
 
 			<div className='space-x-2'>
 				<button
-					className='bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors'
+					className='bg-gray-200 text-gray-700 px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-300 transition-colors'
 					onClick={() => acceptConnectionRequest(request._id)}
 				>
 					Accept

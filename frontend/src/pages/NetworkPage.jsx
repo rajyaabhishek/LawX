@@ -1,12 +1,29 @@
+import { useState, useEffect, useMemo } from "react";
+import { 
+	Box, 
+	Grid, 
+	GridItem, 
+	useColorModeValue,
+	VStack,
+	Text,
+	Heading,
+	HStack,
+	Icon,
+	Badge
+} from "@chakra-ui/react";
+import { Users, UserPlus, UserCheck, Briefcase } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@clerk/clerk-react";
 import { axiosInstance } from "../lib/axios";
-import Sidebar from "../components/Sidebar";
-import { UserPlus } from "lucide-react";
+import RecommendedUser from "../components/RecommendedUser";
 import FriendRequest from "../components/FriendRequest";
 import UserCard from "../components/UserCard";
+import useShowToast from "../hooks/useShowToast";
 
 const NetworkPage = () => {
-	const { data: user } = useQuery({ queryKey: ["authUser"] });
+	const { user } = useUser();
+	const showToast = useShowToast();
+	const [activeTab, setActiveTab] = useState("suggestions");
 
 	const { data: connectionRequests } = useQuery({
 		queryKey: ["connectionRequests"],
@@ -18,49 +35,119 @@ const NetworkPage = () => {
 		queryFn: () => axiosInstance.get("/connections"),
 	});
 
-	return (
-		<div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
-			<div className='col-span-1 lg:col-span-1'>
-				<Sidebar user={user} />
-			</div>
-			<div className='col-span-1 lg:col-span-3'>
-				<div className='bg-secondary rounded-lg shadow p-6 mb-6'>
-					<h1 className='text-2xl font-bold mb-6'>My Network</h1>
+	// Query recommended users (people you may know)
+	const { data: recommendedUsers } = useQuery({
+		queryKey: ["recommendedUsers"],
+		queryFn: async () => {
+			const res = await axiosInstance.get("/users/suggestions");
+			return res.data;
+		},
+	});
 
-					{connectionRequests?.data?.length > 0 ? (
-						<div className='mb-8'>
-							<h2 className='text-xl font-semibold mb-2'>Connection Request</h2>
-							<div className='space-y-4'>
-								{connectionRequests.data.map((request) => (
-									<FriendRequest key={request.id} request={request} />
-								))}
-							</div>
-						</div>
-					) : (
-						<div className='bg-white rounded-lg shadow p-6 text-center mb-6'>
-							<UserPlus size={48} className='mx-auto text-gray-400 mb-4' />
-							<h3 className='text-xl font-semibold mb-2'>No Connection Requests</h3>
-							<p className='text-gray-600'>
-								You don&apos;t have any pending connection requests at the moment.
-							</p>
-							<p className='text-gray-600 mt-2'>
-								Explore suggested connections below to expand your network!
-							</p>
-						</div>
-					)}
-					{connections?.data?.length > 0 && (
-						<div className='mb-8'>
-							<h2 className='text-xl font-semibold mb-4'>My Connections</h2>
-							<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-								{connections.data.map((connection) => (
-									<UserCard key={connection._id} user={connection} isConnection={true} />
-								))}
-							</div>
-						</div>
-					)}
-				</div>
-			</div>
-		</div>
+	// Filter out already connected users
+	const filteredRecommendedUsers = useMemo(() => {
+		if (!recommendedUsers || !connections?.data) return recommendedUsers;
+		const connectionIds = connections.data.filter(conn => !conn.caseTag).map(c => c._id);
+		return recommendedUsers.filter(u => !connectionIds.includes(u._id));
+	}, [recommendedUsers, connections]);
+
+	// Theme colors
+	const bgColor = useColorModeValue("gray.50", "gray.900");
+	const cardBg = useColorModeValue("white", "gray.800");
+	const borderColor = useColorModeValue("gray.200", "gray.700");
+	const textColor = useColorModeValue("gray.800", "white");
+	const mutedText = useColorModeValue("gray.600", "gray.400");
+
+	return (
+		<VStack spacing={2} align="stretch">
+			{/* Connection Requests and Connections Section */}
+			<Box bg={cardBg} borderRadius="xl" shadow="sm" p={6} border="1px solid" borderColor={borderColor}>
+				{connectionRequests?.data?.length > 0 ? (
+					<Box mb={8}>
+						<Heading size="md" mb={4} color={textColor}>Connection Requests</Heading>
+						<VStack spacing={3} align="stretch">
+							{connectionRequests.data.map((request) => (
+								<FriendRequest key={request.id} request={request} />
+							))}
+						</VStack>
+					</Box>
+				) : (
+					<Box textAlign="center" mb={6}>
+						<Icon as={UserPlus} boxSize={12} color="gray.400" mb={4} />
+						<Heading size="md" mb={2} color={textColor}>No Connection Requests</Heading>
+						<Text color={mutedText}>
+							You don't have any pending connection requests at the moment.
+						</Text>
+						<Text color={mutedText} mt={2}>
+							Explore suggested connections below to expand your network!
+						</Text>
+					</Box>
+				)}
+
+				{connections?.data?.length > 0 && (
+					<Box>
+						{/* Regular Connections */}
+						{connections.data.filter(conn => !conn.caseTag).length > 0 && (
+							<Box mb={6}>
+								<Heading size="md" mb={4} color={textColor}>My Connections</Heading>
+								<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
+									{connections.data.filter(conn => !conn.caseTag).map((connection) => (
+										<UserCard key={connection._id} user={connection} isConnection={true} compact={true} />
+									))}
+								</Grid>
+							</Box>
+						)}
+
+						{/* Case Applicants */}
+						{connections.data.filter(conn => conn.caseTag?.type === 'case_applicant').length > 0 && (
+							<Box mb={6}>
+								<HStack mb={4}>
+									<Heading size="md" color={textColor}>Case Applicants</Heading>
+									<Badge colorScheme="blue">
+										{connections.data.filter(conn => conn.caseTag?.type === 'case_applicant').length}
+									</Badge>
+								</HStack>
+								<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
+									{connections.data.filter(conn => conn.caseTag?.type === 'case_applicant').map((connection) => (
+										<UserCard key={`applicant-${connection._id}`} user={connection} isConnection={false} compact={true} />
+									))}
+								</Grid>
+							</Box>
+						)}
+
+						{/* Case Posters */}
+						{connections.data.filter(conn => conn.caseTag?.type === 'case_poster').length > 0 && (
+							<Box mb={6}>
+								<HStack mb={4}>
+									<Heading size="md" color={textColor}>Case Contacts</Heading>
+									<Badge colorScheme="yellow">
+										{connections.data.filter(conn => conn.caseTag?.type === 'case_poster').length}
+									</Badge>
+								</HStack>
+								<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
+									{connections.data.filter(conn => conn.caseTag?.type === 'case_poster').map((connection) => (
+										<UserCard key={`poster-${connection._id}`} user={connection} isConnection={false} compact={true} />
+									))}
+								</Grid>
+							</Box>
+						)}
+					</Box>
+				)}
+			</Box>
+
+			{/* People You May Know - Separate Section */}
+			{filteredRecommendedUsers?.length > 0 && (
+				<Box bg={cardBg} borderRadius="xl" shadow="sm" p={6} border="1px solid" borderColor={borderColor}>
+					<Heading size="md" mb={4} color={textColor}>People You May Know</Heading>
+					<VStack spacing={3} align="stretch">
+						{filteredRecommendedUsers.map((usr) => (
+							<RecommendedUser key={usr._id} user={usr} />
+						))}
+					</VStack>
+				</Box>
+			)}
+		</VStack>
 	);
 };
+
 export default NetworkPage;

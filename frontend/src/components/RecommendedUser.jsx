@@ -1,4 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { 
+	Flex, 
+	Avatar, 
+	VStack, 
+	Text, 
+	Button, 
+	HStack,
+	useColorModeValue,
+	Spinner,
+	IconButton
+} from "@chakra-ui/react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -6,6 +17,11 @@ import { Check, Clock, UserCheck, UserPlus, X } from "lucide-react";
 
 const RecommendedUser = ({ user }) => {
 	const queryClient = useQueryClient();
+	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
+	// Theme colors
+	const textColor = useColorModeValue("gray.800", "white");
+	const mutedText = useColorModeValue("gray.600", "gray.400");
 
 	const { data: connectionStatus, isLoading } = useQuery({
 		queryKey: ["connectionStatus", user._id],
@@ -16,10 +32,26 @@ const RecommendedUser = ({ user }) => {
 		mutationFn: (userId) => axiosInstance.post(`/connections/request/${userId}`),
 		onSuccess: () => {
 			toast.success("Connection request sent successfully");
-			queryClient.invalidateQueries({ queryKey: ["connectionStatus", user._id] });
+
+			// Optimistically update cache so button shows pending immediately
+			queryClient.setQueryData([
+				"connectionStatus",
+				user._id,
+			], { data: { status: "pending" } });
+
+			queryClient.invalidateQueries(["recommendedUsers"]);
 		},
 		onError: (error) => {
-			toast.error(error.response?.data?.error || "An error occurred");
+			const errorMessage = error.response?.data?.message || error.response?.data?.error || "An error occurred";
+			toast.error(errorMessage);
+			
+			// If connection request already exists, update UI to show pending state
+			if (errorMessage === "Connection request already sent") {
+				queryClient.setQueryData([
+					"connectionStatus",
+					user._id,
+				], { data: { status: "pending" } });
+			}
 		},
 	});
 
@@ -28,9 +60,10 @@ const RecommendedUser = ({ user }) => {
 		onSuccess: () => {
 			toast.success("Connection request accepted");
 			queryClient.invalidateQueries({ queryKey: ["connectionStatus", user._id] });
+			queryClient.invalidateQueries(["recommendedUsers"]);
 		},
 		onError: (error) => {
-			toast.error(error.response?.data?.error || "An error occurred");
+			toast.error(error.response?.data?.message || error.response?.data?.error || "An error occurred");
 		},
 	});
 
@@ -39,68 +72,111 @@ const RecommendedUser = ({ user }) => {
 		onSuccess: () => {
 			toast.success("Connection request rejected");
 			queryClient.invalidateQueries({ queryKey: ["connectionStatus", user._id] });
+			queryClient.invalidateQueries(["recommendedUsers"]);
 		},
 		onError: (error) => {
-			toast.error(error.response?.data?.error || "An error occurred");
+			toast.error(error.response?.data?.message || error.response?.data?.error || "An error occurred");
 		},
 	});
 
 	const renderButton = () => {
 		if (isLoading) {
 			return (
-				<button className='px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-500' disabled>
+				<Button size="sm" isDisabled>
+					<Spinner size="xs" mr={2} />
 					Loading...
-				</button>
+				</Button>
 			);
 		}
 
 		switch (connectionStatus?.data?.status) {
 			case "pending":
 				return (
-					<button
-						className='px-3 py-1 rounded-full text-sm bg-yellow-500 text-white flex items-center'
-						disabled
+					<Button
+						size="sm"
+						variant="outline"
+						colorScheme="gray"
+						leftIcon={<Clock size={16} />}
+						isDisabled
+						borderColor="gray.300"
+						color="gray.600"
+						_dark={{ 
+							borderColor: "gray.600", 
+							color: "gray.400",
+							_hover: { borderColor: "gray.500" }
+						}}
 					>
-						<Clock size={16} className='mr-1' />
 						Pending
-					</button>
+					</Button>
 				);
 			case "received":
 				return (
-					<div className='flex gap-2 justify-center'>
-						<button
+					<HStack spacing={2}>
+						<IconButton
+							aria-label="Accept request"
+							icon={<Check size={16} />}
+							size="sm"
+							variant="outline"
+							colorScheme="gray"
+							borderColor="gray.300"
+							color="gray.700"
+							_hover={{ 
+								borderColor: "gray.400", 
+								bg: "gray.50",
+								color: "gray.800"
+							}}
+							_dark={{ 
+								borderColor: "gray.600", 
+								color: "gray.300",
+								_hover: { 
+									borderColor: "gray.500", 
+									bg: "gray.700",
+									color: "gray.200"
+								}
+							}}
 							onClick={() => acceptRequest(connectionStatus.data.requestId)}
-							className={`rounded-full p-1 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white`}
-						>
-							<Check size={16} />
-						</button>
-						<button
+						/>
+						<IconButton
+							aria-label="Reject request"
+							icon={<X size={16} />}
+							size="sm"
+							variant="outline"
+							colorScheme="red"
 							onClick={() => rejectRequest(connectionStatus.data.requestId)}
-							className={`rounded-full p-1 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white`}
-						>
-							<X size={16} />
-						</button>
-					</div>
+						/>
+					</HStack>
 				);
 			case "connected":
 				return (
-					<button
-						className='px-3 py-1 rounded-full text-sm bg-green-500 text-white flex items-center'
-						disabled
+					<Button
+						size="sm"
+						variant="outline"
+						colorScheme="gray"
+						leftIcon={<UserCheck size={16} />}
+						isDisabled
+						borderColor="gray.300"
+						color="gray.600"
+						bg="gray.50"
+						_dark={{ 
+							borderColor: "gray.600", 
+							color: "gray.400",
+							bg: "gray.800"
+						}}
 					>
-						<UserCheck size={16} className='mr-1' />
 						Connected
-					</button>
+					</Button>
 				);
 			default:
 				return (
-					<button
-						className='px-3 py-1 rounded-full text-sm border border-primary text-primary hover:bg-primary hover:text-white transition-colors duration-200 flex items-center'
+					<Button
+						size="sm"
+						variant="outline"
+						colorScheme="blue"
+						leftIcon={<UserPlus size={16} />}
 						onClick={handleConnect}
 					>
-						<UserPlus size={16} className='mr-1' />
 						Connect
-					</button>
+					</Button>
 				);
 		}
 	};
@@ -111,21 +187,47 @@ const RecommendedUser = ({ user }) => {
 		}
 	};
 
+	// If the recommended user is the same as the logged-in user, do not render anything
+	if (authUser?._id === user._id) {
+		return null;
+	}
+
+	// Hide if already connected
+	if (connectionStatus?.data?.status === "connected") {
+		return null;
+	}
+
 	return (
-		<div className='flex items-center justify-between mb-4'>
-			<Link to={`/profile/${user.username}`} className='flex items-center flex-grow'>
-				<img
+		<Flex justify="space-between" align="center" mb={4}>
+			<Flex 
+				as={Link} 
+				to={`/profile/${user.username}`} 
+				align="center" 
+				flex={1}
+				_hover={{ textDecoration: "none" }}
+			>
+				<Avatar
 					src={user.profilePicture || "/avatar.png"}
-					alt={user.name}
-					className='w-12 h-12 rounded-full mr-3'
+					name={user.name}
+					size="md"
+					mr={3}
 				/>
-				<div>
-					<h3 className='font-semibold text-sm'>{user.name}</h3>
-					<p className='text-xs text-info'>{user.headline}</p>
-				</div>
-			</Link>
+				<VStack align="flex-start" spacing={0}>
+					<Text 
+						fontWeight="semibold" 
+						fontSize="sm" 
+						color={textColor}
+						_hover={{ color: "blue.500" }}
+					>
+						{user.name}
+					</Text>
+					<Text fontSize="xs" color={mutedText} noOfLines={1}>
+						{user.headline}
+					</Text>
+				</VStack>
+			</Flex>
 			{renderButton()}
-		</div>
+		</Flex>
 	);
 };
 export default RecommendedUser;

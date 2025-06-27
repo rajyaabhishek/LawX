@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
 import {
 	deleteNotification,
 	getUserNotifications,
@@ -8,7 +8,8 @@ import {
 
 const router = express.Router();
 
-router.get("/", protectRoute, getUserNotifications);
+// Notifications are user-specific, so keep them protected but provide graceful fallback
+router.get("/", optionalAuth, trackActivity, getUserNotifications);
 
 router.put("/:id/read", protectRoute, markNotificationAsRead);
 router.delete("/:id", protectRoute, deleteNotification);

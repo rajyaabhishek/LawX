@@ -1,5 +1,5 @@
 import express from "express";
-import { protectRoute } from "../middleware/auth.middleware.js";
+import { protectRoute, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
 import {
 	createPost,
 	getFeedPosts,
@@ -11,10 +11,13 @@ import {
 
 const router = express.Router();
 
-router.get("/", protectRoute, getFeedPosts);
+// Public routes with optional auth (guests can view, auth users get enhanced experience)
+router.get("/", optionalAuth, trackActivity, getFeedPosts);
+router.get("/:id", optionalAuth, trackActivity, getPostById);
+
+// Protected routes (require authentication)
 router.post("/create", protectRoute, createPost);
 router.delete("/delete/:id", protectRoute, deletePost);
-router.get("/:id", protectRoute, getPostById);
 router.post("/:id/comment", protectRoute, createComment);
 router.post("/:id/like", protectRoute, likePost);
 

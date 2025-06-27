@@ -1,15 +1,35 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { 
+	Box, 
+	Flex, 
+	Avatar, 
+	Textarea, 
+	Button, 
+	Image, 
+	HStack,
+	useColorModeValue,
+	Input,
+	Text
+} from "@chakra-ui/react";
+import { useUser } from "@clerk/clerk-react";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
-import { Image, Loader } from "lucide-react";
+import { Image as ImageIcon, Loader, Lock } from "lucide-react";
 
 const PostCreation = ({ user }) => {
+	const { isSignedIn } = useUser();
 	const [content, setContent] = useState("");
 	const [image, setImage] = useState(null);
 	const [imagePreview, setImagePreview] = useState(null);
 
 	const queryClient = useQueryClient();
+
+	// Theme colors
+	const cardBg = useColorModeValue("white", "gray.800");
+	const inputBg = useColorModeValue("gray.100", "gray.600");
+	const textColor = useColorModeValue("gray.800", "white");
+	const mutedText = useColorModeValue("gray.600", "gray.400");
 
 	const { mutate: createPostMutation, isPending } = useMutation({
 		mutationFn: async (postData) => {
@@ -64,42 +84,108 @@ const PostCreation = ({ user }) => {
 		});
 	};
 
+	if (!isSignedIn) {
+		return null;
+	}
+
 	return (
-		<div className='bg-secondary rounded-lg shadow mb-4 p-4'>
-			<div className='flex space-x-3'>
-				<img src={user.profilePicture || "/avatar.png"} alt={user.name} className='size-12 rounded-full' />
-				<textarea
+		<Box 
+			bg={cardBg} 
+			borderRadius="lg" 
+			boxShadow="sm" 
+			border="1px"
+			borderColor={useColorModeValue("gray.200", "gray.700")}
+			mb={1} 
+			p={{ base: 3, md: 4 }}
+			w="100%"
+		>
+			<Flex 
+				gap={{ base: 2, md: 3 }} 
+				mb={4}
+				direction={{ base: "column", sm: "row" }}
+			>
+				<Avatar 
+					src={user?.profilePicture || "/avatar.png"} 
+					name={user?.name || "User"} 
+					size={{ base: "sm", md: "md" }}
+					flexShrink={0}
+					alignSelf={{ base: "flex-start", sm: "flex-start" }}
+				/>
+				<Textarea
 					placeholder="What's on your mind?"
-					className='w-full p-3 rounded-lg bg-base-100 hover:bg-base-200 focus:bg-base-200 focus:outline-none resize-none transition-colors duration-200 min-h-[100px]'
+					bg={inputBg}
+					border="none"
+					resize="none"
+					minH={{ base: "80px", md: "100px" }}
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
+					color={textColor}
+					fontSize={{ base: "sm", md: "md" }}
+					_placeholder={{ color: mutedText }}
+					_hover={{
+						bg: useColorModeValue("gray.200", "gray.500")
+					}}
+					_focus={{
+						bg: useColorModeValue("gray.200", "gray.500"),
+						outline: "none"
+					}}
 				/>
-			</div>
+			</Flex>
 
 			{imagePreview && (
-				<div className='mt-4'>
-					<img src={imagePreview} alt='Selected' className='w-full h-auto rounded-lg' />
-				</div>
+				<Box mb={4}>
+					<Image 
+						src={imagePreview} 
+						alt="Selected" 
+						w="full" 
+						borderRadius="lg"
+						maxH={{ base: "200px", md: "300px" }}
+						objectFit="cover"
+					/>
+				</Box>
 			)}
 
-			<div className='flex justify-between items-center mt-4'>
-				<div className='flex space-x-4'>
-					<label className='flex items-center text-info hover:text-info-dark transition-colors duration-200 cursor-pointer'>
-						<Image size={20} className='mr-2' />
-						<span>Photo</span>
-						<input type='file' accept='image/*' className='hidden' onChange={handleImageChange} />
-					</label>
-				</div>
+			<Flex 
+				justify="space-between" 
+				align="center"
+				direction={{ base: "column", sm: "row" }}
+				gap={{ base: 3, sm: 0 }}
+			>
+				<HStack spacing={{ base: 2, md: 4 }} w={{ base: "100%", sm: "auto" }}>
+					<Button
+						as="label"
+						variant="ghost"
+						leftIcon={<ImageIcon size={16} />}
+						color={mutedText}
+						size={{ base: "sm", md: "md" }}
+						fontSize={{ base: "sm", md: "md" }}
+						_hover={{ color: textColor }}
+						cursor="pointer"
+					>
+						Photo
+						<Input 
+							type="file" 
+							accept="image/*" 
+							display="none" 
+							onChange={handleImageChange} 
+						/>
+					</Button>
+				</HStack>
 
-				<button
-					className='bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary-dark transition-colors duration-200'
+				<Button
+					colorScheme="blue"
 					onClick={handlePostCreation}
-					disabled={isPending}
+					isDisabled={isPending || !content.trim()}
+					isLoading={isPending}
+					loadingText="Sharing"
+					size={{ base: "sm", md: "md" }}
+					w={{ base: "100%", sm: "auto" }}
+					fontSize={{ base: "sm", md: "md" }}
 				>
-					{isPending ? <Loader className='size-5 animate-spin' /> : "Share"}
-				</button>
-			</div>
-		</div>
+					{isPending ? <Loader size={16} className="animate-spin" /> : "Share"}
+				</Button>
+			</Flex>
+		</Box>
 	);
 };
 export default PostCreation;

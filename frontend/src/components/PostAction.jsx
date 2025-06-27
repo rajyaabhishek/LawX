@@ -1,8 +1,23 @@
-export default function PostAction({ icon, text, onClick }) {
+import { Button, useColorModeValue } from "@chakra-ui/react";
+
+export default function PostAction({ icon, text, onClick, isActive = false }) {
+	const activeColor = useColorModeValue("blue.500", "blue.300");
+	const textColor = useColorModeValue("gray.600", "gray.400");
+	const hoverColor = useColorModeValue("gray.800", "white");
+
 	return (
-		<button className='flex items-center' onClick={onClick}>
-			<span className='mr-1'>{icon}</span>
-			<span className='hidden sm:inline'>{text}</span>
-		</button>
+		<Button
+			variant="ghost"
+			size="sm"
+			leftIcon={icon}
+			onClick={onClick}
+			color={isActive ? activeColor : textColor}
+			_hover={{ color: hoverColor }}
+			fontWeight="normal"
+		>
+			<span style={{ display: window.innerWidth >= 640 ? 'inline' : 'none' }}>
+				{text}
+			</span>
+		</Button>
 	);
 }
