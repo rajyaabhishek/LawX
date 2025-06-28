@@ -41,6 +41,7 @@ import {
   ArrowLeftIcon
 } from "@chakra-ui/icons";
 import { FiSend } from "react-icons/fi";
+import { BsCheck2All } from "react-icons/bs";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { conversationsAtom, selectedConversationAtom } from "../atoms/messagesAtom";
 import { useUser, useAuth } from "@clerk/clerk-react";
@@ -50,6 +51,7 @@ import { useSocket } from "../context/SocketContext";
 import useShowToast from "../hooks/useShowToast";
 import { axiosInstance } from "../lib/axios";
 import { useNavigate } from "react-router-dom";
+import { formatMessageTimestamp } from "../utils/dateUtils";
 
 const ChatPopup = ({ isOpen, onClose }) => {
   const { user: currentUser, isSignedIn } = useUser();
@@ -561,8 +563,8 @@ const ChatPopup = ({ isOpen, onClose }) => {
 
   // Mobile version uses Drawer
   const handleUpgradeToPremium = () => {
-    onClose();
     navigate('/premium');
+    onClose();
   };
   
   if (isMobile) {
@@ -811,29 +813,31 @@ const ChatPopup = ({ isOpen, onClose }) => {
       overflow="hidden"
       ref={chatRef}
       css={{
-        '@supports (height: 100svh)': {
-          maxHeight: '100dvh',
+        '@supports (height: 100dvh)': {
+          maxHeight: isMobile ? '100dvh' : 'calc(100vh - 100px)',
         },
-        '@supports not (height: 100svh)': {
-          maxHeight: '100vh',
+        '@supports not (height: 100dvh)': {
+          maxHeight: isMobile ? '100vh' : 'calc(100vh - 100px)',
         },
       }}
     >
       {/* Resize handle */}
-      <Box
-        position="absolute"
-        left="0"
-        top="0"
-        bottom="0"
-        width="4px"
-        cursor="ew-resize"
-        bg="transparent"
-        _hover={{ bg: "blue.200" }}
-        onMouseDown={handleMouseDown}
-        zIndex={10}
-      />
+      {!isMobile && (
+        <Box
+          position="absolute"
+          left="0"
+          top="0"
+          bottom="0"
+          width="4px"
+          cursor="ew-resize"
+          bg="transparent"
+          _hover={{ bg: "blue.200" }}
+          onMouseDown={handleMouseDown}
+          zIndex={10}
+        />
+      )}
 
-      {/* Main Header */}
+      {/* Main Header - Fixed position to prevent cropping */}
       <Flex
         bg={headerBg}
         p={3}
@@ -841,6 +845,11 @@ const ChatPopup = ({ isOpen, onClose }) => {
         justify="space-between"
         borderBottom="1px solid"
         borderColor={borderColor}
+        position="sticky"
+        top={0}
+        zIndex={100}
+        minH="60px"
+        flexShrink={0}
       >
         <HStack spacing={2}>
           <Box w="24px" h="24px" bg="orange.500" borderRadius="full" />
@@ -857,7 +866,7 @@ const ChatPopup = ({ isOpen, onClose }) => {
                 src={selectedConversation.userProfilePic} 
                 name={selectedConversation.username}
               />
-              <Text fontWeight="bold" color={textColor} fontSize="md">
+              <Text fontWeight="bold" color={textColor} fontSize="md" noOfLines={1} maxW="120px">
                 {selectedConversation.username}
               </Text>
             </>
@@ -867,23 +876,28 @@ const ChatPopup = ({ isOpen, onClose }) => {
             size="sm"
             variant="ghost"
             onClick={onClose}
+            aria-label="Close chat"
+            minW="32px"
+            h="32px"
+            _hover={{ bg: useColorModeValue("gray.200", "gray.600") }}
           />
         </HStack>
       </Flex>
 
-      {/* Content - Two Panel Layout */}
-      <Flex height="calc(100% - 60px)">
-        {/* Left Panel - Conversations List (Even Narrower) */}
+      {/* Content - Two Panel Layout with proper height calculation */}
+      <Flex height="calc(100% - 60px)" overflow="hidden">
+        {/* Left Panel - Conversations List */}
         <Box
-          w="240px"
+          w={isMobile ? "100%" : "240px"}
           bg={leftPanelBg}
-          borderRight="1px solid"
+          borderRight={isMobile ? "none" : "1px solid"}
           borderColor={borderColor}
-          display="flex"
+          display={isMobile && selectedConversation._id ? "none" : "flex"}
           flexDirection="column"
+          overflow="hidden"
         >
           {/* Search */}
-          <Box p={3} position="relative">
+          <Box p={3} position="relative" flexShrink={0}>
             <InputGroup size="sm">
               <InputLeftElement>
                 <SearchIcon color="gray.400" />
@@ -910,7 +924,7 @@ const ChatPopup = ({ isOpen, onClose }) => {
                 border="1px solid"
                 borderColor={borderColor}
                 borderRadius="md"
-                zIndex={10}
+                zIndex={200}
                 maxHeight="200px"
                 overflowY="auto"
                 mt={1}
@@ -1009,22 +1023,43 @@ const ChatPopup = ({ isOpen, onClose }) => {
           </Box>
         </Box>
 
-        {/* Right Panel - Chat View (Wider) */}
+        {/* Right Panel - Chat View */}
         <Box 
           flex="1" 
           bg={rightPanelBg} 
-          display="flex" 
+          display={isMobile && !selectedConversation._id ? "none" : "flex"}
           flexDirection="column"
           position="relative"
-          css={{
-            '@supports (height: 100svh)': {
-              height: '100dvh',
-            },
-            '@supports not (height: 100svh)': {
-              height: '100vh',
-            },
-          }}
+          overflow="hidden"
+          w={isMobile ? "100%" : "auto"}
         >
+          {/* Mobile back button */}
+          {isMobile && selectedConversation._id && (
+            <Flex
+              p={3}
+              align="center"
+              gap={3}
+              borderBottom="1px solid"
+              borderColor={borderColor}
+              bg={headerBg}
+              position="sticky"
+              top={0}
+              zIndex={50}
+            >
+              <IconButton
+                icon={<ArrowLeftIcon />}
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedConversation({ _id: "", userId: "" })}
+                aria-label="Back to conversations"
+              />
+              <Avatar size="sm" src={selectedConversation.userProfilePic} name={selectedConversation.username} />
+              <Text fontWeight="bold" color={textColor} fontSize="md">
+                {selectedConversation.username}
+              </Text>
+            </Flex>
+          )}
+
           {selectedConversation?.userId ? (
             <>
               {/* Messages Area */}
@@ -1033,227 +1068,175 @@ const ChatPopup = ({ isOpen, onClose }) => {
                 overflowY="auto" 
                 p={4}
                 css={{
-                  '--safezone-top': 'env(safe-area-inset-top, 0px)',
-                  '--safezone-bottom': 'env(safe-area-inset-bottom, 0px)',
-                  '--safezone-left': 'env(safe-area-inset-left, 0px)',
-                  '--safezone-right': 'env(safe-area-inset-right, 0px)',
-                  '@supports (height: 100svh)': {
-                    maxHeight: 'calc(100dvh - 120px - var(--safezone-bottom))',
+                  '&::-webkit-scrollbar': {
+                    width: '4px',
                   },
-                  '@supports not (height: 100svh)': {
-                    maxHeight: 'calc(100vh - 120px - var(--safezone-bottom))',
+                  '&::-webkit-scrollbar-track': {
+                    background: 'transparent',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: useColorModeValue('rgba(0,0,0,0.2)', 'rgba(255,255,255,0.2)'),
+                    borderRadius: '4px',
                   },
                 }}
               >
                 {loadingConversations ? (
                   // Loading skeleton
-                  [...Array(3)].map((_, i) => (
-                    <Flex
-                      key={i}
-                      gap={2}
-                      alignItems="center"
-                      p={2}
-                      borderRadius="md"
-                      alignSelf={i % 2 === 0 ? "flex-start" : "flex-end"}
-                      maxW="70%"
-                      mb={3}
-                    >
-                      {i % 2 === 0 && <SkeletonCircle size={8} />}
-                      <VStack align="start" flex="1" spacing={1}>
-                        <Skeleton h="16px" w="200px" />
-                        <Skeleton h="12px" w="150px" />
-                      </VStack>
-                      {i % 2 !== 0 && <SkeletonCircle size={8} />}
-                    </Flex>
-                  ))
-                ) : messages.length > 0 ? (
-                  <VStack spacing={2} align="stretch" w="100%">
-                    {messages.map((message, index) => {
-                      // Handle both Clerk ID and MongoDB ObjectId for legacy messages
-                      const currentUserClerkId = currentUser?.id;
-                      const currentUserMongoId = currentUserData?._id || '6826c5f75ada7d1e6d24698c'; // Fallback to known MongoDB ID
-                      
-                      // Check ownership - try Clerk ID first, then MongoDB ID if available
-                      let isOwnMessage = false;
-                      if (currentUserClerkId && message.sender === currentUserClerkId) {
-                        isOwnMessage = true;
-                      } else if (currentUserMongoId && String(message.sender) === String(currentUserMongoId)) {
-                        isOwnMessage = true;
-                      }
-                      
-                      // Debug logging for first few messages only
-                      if (index < 2) {
-                        console.log(`ChatPopup Message ${index}:`, {
-                          sender: message.sender,
-                          currentUserClerkId,
-                          currentUserMongoId,
-                          isOwnMessage,
-                          text: message.text?.substring(0, 20) + '...'
-                        });
-                      }
-                      
-                      const showAvatar = !isOwnMessage && (index === 0 || messages[index - 1]?.sender !== message.sender);
-                      const showTimestamp = index === messages.length - 1 || 
-                        messages[index + 1]?.sender !== message.sender ||
-                        (new Date(messages[index + 1]?.createdAt) - new Date(message.createdAt)) > 300000; // 5 minutes
-                      
-                      return (
-                        <Flex 
-                          key={message._id} 
-                          justify={isOwnMessage ? "flex-end" : "flex-start"} 
-                          mb={3}
-                          w="100%"
-                        >
-                          <Flex 
-                            direction={isOwnMessage ? "row-reverse" : "row"} 
-                            align="flex-end" 
-                            gap={2}
-                            maxW="75%"
-                          >
-                            {/* Avatar for received messages only */}
-                            {!isOwnMessage && (
-                              <Box minW="32px" display="flex" justifyContent="center" alignSelf="flex-end">
-                                {showAvatar && (
-                                  <Avatar 
-                                    size="sm" 
-                                    src={selectedConversation.userProfilePic} 
-                                    name={selectedConversation.username} 
-                                  />
-                                )}
-                              </Box>
-                            )}
-                            
-                            {/* Message Content */}
-                            <Box>
-                              {/* Username for received messages */}
-                              {!isOwnMessage && showAvatar && (
-                                <Text fontSize="xs" color={mutedText} mb={1} ml={1}>
-                                  {selectedConversation.username}
-                                </Text>
-                              )}
-                              
-                              {/* Message Bubble */}
-                              <Box 
-                                bg={isOwnMessage 
-                                  ? useColorModeValue("blue.500", "blue.400")
-                                  : useColorModeValue("gray.100", "gray.600")
-                                }
-                                color={isOwnMessage 
-                                  ? "white" 
-                                  : useColorModeValue("gray.800", "white")
-                                }
-                                px={4}
-                                py={3}
-                                borderRadius="2xl"
-                                borderBottomLeftRadius={!isOwnMessage && showAvatar ? "sm" : "2xl"}
-                                borderBottomRightRadius={isOwnMessage && showAvatar ? "sm" : "2xl"}
-                                shadow="sm"
-                                position="relative"
-                                minW="60px"
-                              >
-                                <Text fontSize="sm" lineHeight="1.4" wordBreak="break-word">
-                                  {message.text}
-                                </Text>
-                              </Box>
-                              
-                              {/* Timestamp */}
-                              {showTimestamp && (
-                                <Text 
-                                  fontSize="xs" 
-                                  color={mutedText} 
-                                  mt={1}
-                                  textAlign={isOwnMessage ? "right" : "left"}
-                                  mx={1}
-                                >
-                                  {new Date(message.createdAt).toLocaleTimeString([], { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </Text>
-                              )}
-                            </Box>
-                          </Flex>
-                        </Flex>
-                      );
-                    })}
-                    {/* Auto-scroll anchor */}
-                    <div ref={messagesEndRef} />
+                  <VStack spacing={4}>
+                    {[...Array(3)].map((_, i) => (
+                      <HStack key={i} w="full" justify={i % 2 === 0 ? "flex-start" : "flex-end"}>
+                        {i % 2 === 0 && <SkeletonCircle size="8" />}
+                        <Skeleton
+                          h="40px"
+                          w="200px"
+                          startColor={useColorModeValue("gray.100", "gray.700")}
+                          endColor={useColorModeValue("gray.200", "gray.600")}
+                          borderRadius="18px"
+                        />
+                        {i % 2 !== 0 && <SkeletonCircle size="8" />}
+                      </HStack>
+                    ))}
                   </VStack>
                 ) : (
-                  <Flex align="center" justify="center" height="100%">
-                    <Text color={mutedText}>Start a conversation!</Text>
-                  </Flex>
+                  // Messages
+                  <VStack spacing={3} align="stretch">
+                    {messages.map((message, index) => {
+                      const isOwnMessage = message.sender === currentUserData?._id || message.sender === currentUser?.id;
+                      const showAvatar = !isOwnMessage && (index === 0 || messages[index - 1]?.sender !== message.sender);
+                      
+                      return (
+                        <HStack
+                          key={message._id}
+                          justify={isOwnMessage ? "flex-end" : "flex-start"}
+                          align="flex-end"
+                          spacing={2}
+                        >
+                          {!isOwnMessage && (
+                            <Box minW="32px">
+                              {showAvatar && (
+                                <Avatar
+                                  size="xs"
+                                  src={selectedConversation.userProfilePic}
+                                  name={selectedConversation.username}
+                                />
+                              )}
+                            </Box>
+                          )}
+                          
+                          <Box
+                            bg={isOwnMessage ? "blue.500" : useColorModeValue("gray.200", "gray.600")}
+                            color={isOwnMessage ? "white" : useColorModeValue("gray.800", "white")}
+                            p={3}
+                            borderRadius="18px"
+                            maxW="70%"
+                            wordBreak="break-word"
+                          >
+                            {message.img && (
+                              <Image
+                                src={message.img}
+                                alt="Message image"
+                                borderRadius="md"
+                                mb={message.text ? 2 : 0}
+                                maxH="200px"
+                                objectFit="cover"
+                              />
+                            )}
+                            {message.text && (
+                              <Text fontSize="sm">{message.text}</Text>
+                            )}
+                            <Text
+                              fontSize="xs"
+                              color={isOwnMessage ? "whiteAlpha.700" : useColorModeValue("gray.500", "gray.400")}
+                              mt={1}
+                            >
+                              {formatMessageTimestamp(message.createdAt)}
+                              {isOwnMessage && message.seen && (
+                                <Icon as={BsCheck2All} ml={1} color="blue.200" />
+                              )}
+                            </Text>
+                          </Box>
+                          
+                          {isOwnMessage && (
+                            <Box minW="32px">
+                              <Avatar
+                                size="xs"
+                                src={currentUser?.imageUrl}
+                                name={currentUser?.username || currentUser?.firstName}
+                              />
+                            </Box>
+                          )}
+                        </HStack>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </VStack>
                 )}
               </Box>
 
-              {/* Input Area */}
+              {/* Message Input */}
               <Box
-                p={4}
-                pt={3}
+                p={3}
                 borderTop="1px solid"
                 borderColor={borderColor}
-                bg={bgColor}
+                bg={useColorModeValue("white", "gray.800")}
                 position="sticky"
-                bottom="0"
-                left="0"
-                right="0"
-                zIndex="docked"
-                css={{
-                  '--safezone-bottom': 'env(safe-area-inset-bottom, 0px)',
-                  paddingBottom: 'calc(0.75rem + var(--safezone-bottom))',
-                }}
+                bottom={0}
+                flexShrink={0}
               >
-                <Flex align="center" gap={3}>
+                <Flex gap={2} align="center">
                   <Input
                     placeholder="Type a message..."
-                    flex="1"
-                    borderRadius="3xl"
-                    bg={useColorModeValue("gray.50", "gray.700")}
-                    border="1px solid"
-                    borderColor={useColorModeValue("gray.200", "gray.600")}
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && messageText.trim()) {
-                        handleSendMessage(messageText);
-                        setMessageText('');
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (messageText.trim()) {
+                          handleSendMessage(messageText);
+                          setMessageText('');
+                        }
                       }
                     }}
-                    _focus={{ 
-                      bg: useColorModeValue("white", "gray.600"), 
-                      borderColor: "blue.400",
-                      boxShadow: "0 0 0 1px var(--chakra-colors-blue-400)"
+                    borderRadius="20px"
+                    border="1px solid"
+                    borderColor={useColorModeValue("gray.300", "gray.600")}
+                    bg={useColorModeValue("gray.50", "gray.700")}
+                    _focus={{
+                      borderColor: "blue.500",
+                      bg: useColorModeValue("white", "gray.600")
                     }}
-                    py={3}
-                    px={4}
-                    fontSize="md"
-                    inputMode="text"
-                    enterKeyHint="send"
+                    flex={1}
                   />
                   <IconButton
                     icon={<FiSend />}
-                    size="md"
-                    borderRadius="full"
-                    colorScheme="blue"
-                    variant={messageText.trim() ? "solid" : "ghost"}
                     onClick={() => {
                       if (messageText.trim()) {
                         handleSendMessage(messageText);
                         setMessageText('');
                       }
                     }}
+                    colorScheme="blue"
                     isDisabled={!messageText.trim()}
-                    _hover={{
-                      transform: "scale(1.05)",
-                    }}
-                    transition="all 0.2s"
+                    borderRadius="50%"
+                    size="md"
+                    aria-label="Send message"
                   />
                 </Flex>
               </Box>
             </>
           ) : (
-            <Flex align="center" justify="center" height="100%">
-              <Text color={mutedText}>Select a conversation to start messaging</Text>
+            <Flex align="center" justify="center" height="100%" p={4}>
+              <VStack spacing={4} textAlign="center">
+                <Text fontSize="lg" fontWeight="semibold" color={textColor}>
+                  Welcome to Chat
+                </Text>
+                <Text color={mutedText}>
+                  Select a conversation to start messaging
+                </Text>
+                <Button colorScheme="blue" onClick={handleUpgradeToPremium}>
+                  Upgrade to Premium
+                </Button>
+              </VStack>
             </Flex>
           )}
         </Box>

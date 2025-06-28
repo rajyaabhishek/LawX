@@ -276,13 +276,14 @@ const MessageContainer = ({ onlineUsers = [] }) => {
     }
   }, [messages, isKeyboardOpen, keyboardHeight]);
 
-  // Calculate dynamic heights for mobile
+  // Calculate dynamic heights for mobile with proper viewport units
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
   const headerHeight = 60;
   const inputContainerHeight = 80;
   
+  // Use consistent viewport units and safe area calculations
   const messagesContainerHeight = isMobile 
-    ? `calc(100vh - ${headerHeight}px - ${inputContainerHeight}px - ${keyboardHeight}px - ${safeAreaBottom}px)`
+    ? `calc(100dvh - ${headerHeight}px - ${inputContainerHeight}px - ${keyboardHeight}px - env(safe-area-inset-bottom, 0px))`
     : `calc(100vh - 140px)`;
 
   return (
@@ -293,7 +294,7 @@ const MessageContainer = ({ onlineUsers = [] }) => {
       p={0}
       m={0}
       flexDirection="column"
-      h="100vh"
+      h="100%"
       maxW="100%"
       w="100%"
       position="relative"
@@ -389,7 +390,11 @@ const MessageContainer = ({ onlineUsers = [] }) => {
         style={{
           margin: 0,
           padding: 0,
-          width: '100%'
+          width: '100%',
+          // Use the safer calc method for height
+          height: isMobile 
+            ? `calc(100dvh - ${headerHeight}px - ${inputContainerHeight}px - ${keyboardHeight}px)` 
+            : `calc(100vh - 140px)`
         }}
         css={{
           '&::-webkit-scrollbar': {
@@ -452,43 +457,56 @@ const MessageContainer = ({ onlineUsers = [] }) => {
                       
                       {/* Message Bubble */}
                       <Box
-                        className={`chat-message-bubble ${isOwnMessage ? 'chat-message-own' : 'chat-message-other'}`}
-                        bg={isOwnMessage ? "blue.500" : useColorModeValue("gray.200", "gray.700")}
+                        bg={isOwnMessage ? "blue.500" : useColorModeValue("white", "gray.700")}
                         color={isOwnMessage ? "white" : useColorModeValue("gray.800", "white")}
+                        borderRadius="18px"
                         p={3}
-                        borderRadius={{ base: "16px", md: "18px" }}
-                        borderBottomRightRadius={isOwnMessage ? { base: "6px", md: "4px" } : { base: "16px", md: "18px" }}
-                        borderBottomLeftRadius={!isOwnMessage ? { base: "6px", md: "4px" } : { base: "16px", md: "18px" }}
-                        maxW="100%"
-                        position="relative"
+                        shadow={isOwnMessage ? "none" : "sm"}
+                        border={isOwnMessage ? "none" : "1px solid"}
+                        borderColor={useColorModeValue("gray.200", "gray.600")}
                         wordBreak="break-word"
-                        fontSize={{ base: "16px", md: "15px" }}
-                        lineHeight="1.4"
-                        boxShadow="0 1px 2px rgba(0, 0, 0, 0.1)"
+                        position="relative"
+                        className="chat-message-bubble"
                       >
-                        <Text>{message.text}</Text>
+                        {message.img && (
+                          <img
+                            src={message.img}
+                            alt="Message"
+                            style={{
+                              width: "100%",
+                              maxWidth: "200px",
+                              borderRadius: "8px",
+                              marginBottom: message.text ? "8px" : "0",
+                            }}
+                          />
+                        )}
                         
-                        {/* Timestamp and Status */}
-                        <Flex
-                          align="center"
-                          justify={isOwnMessage ? "flex-end" : "flex-start"}
-                          gap={1}
-                          mt={1}
-                          className={`chat-message-time ${!isOwnMessage ? 'chat-message-time-other' : ''}`}
-                        >
-                          <Text fontSize="10px" opacity={0.7}>
+                        {message.text && (
+                          <Text fontSize="sm" mb={1}>
+                            {message.text}
+                          </Text>
+                        )}
+                        
+                        <Flex align="center" justify="flex-end" gap={1} mt={1}>
+                          <Text fontSize="xs" color={isOwnMessage ? "whiteAlpha.700" : "gray.500"}>
                             {formatMessageTimestamp(message.createdAt)}
                           </Text>
-                          {isOwnMessage && (
-                            <Icon
-                              as={BsCheck2All}
-                              w={3}
-                              h={3}
-                              color={message.seen ? "blue.200" : "gray.400"}
-                            />
+                          {isOwnMessage && message.seen && (
+                            <Icon as={BsCheck2All} color="blue.200" boxSize={3} />
                           )}
                         </Flex>
                       </Box>
+                      
+                      {/* Avatar for sent messages */}
+                      {isOwnMessage && (
+                        <Box minW="32px" h="32px" display="flex" justifyContent="center" alignSelf="flex-end">
+                          <Avatar 
+                            size="xs" 
+                            src={currentUser?.imageUrl}
+                            name={currentUser?.username || currentUser?.firstName}
+                          />
+                        </Box>
+                      )}
                     </Flex>
                   </Flex>
                 </Box>
@@ -498,34 +516,28 @@ const MessageContainer = ({ onlineUsers = [] }) => {
           </Flex>
         )}
       </Box>
-      
-      {/* Enhanced Message Input Container */}
-      
-// Replace the Message Input Container section:
-<Box
-    className="chat-input-container"
-    bg={useColorModeValue("white", "gray.800")}
-    borderTop="1px solid"
-    borderColor={useColorModeValue("gray.200", "gray.700")}
-    p={{ base: 3, md: 4 }}
-    pb={{ base: 3, md: 4 }}  // Simplified padding
-    position={{ base: "absolute", md: "relative" }}  // Changed positioning
-    bottom={0}  // Simplified bottom positioning
-    left={0}
-    right={0}
-    zIndex={25}
-    boxShadow="0 -2px 12px rgba(0, 0, 0, 0.1)"
-    flexShrink={0}
-    minH={`${inputContainerHeight}px`}
-    w="100%"
-    borderRadius={0}
-    style={{
-        margin: 0,
-        transform: 'none'  // Remove transform
-    }}
->
-    <MessageInput onSendMessage={handleOptimisticSend} />
-</Box>
+
+      {/* Message Input Container */}
+      <Box 
+        bg={useColorModeValue("white", "gray.800")}
+        borderTop="1px solid"
+        borderColor={useColorModeValue("gray.200", "gray.700")}
+        p={3}
+        className="chat-input-container"
+        position="sticky"
+        bottom={0}
+        zIndex={10}
+        w="100%"
+        h={`${inputContainerHeight}px`}
+        flexShrink={0}
+        style={{
+          margin: 0,
+          width: '100%',
+          paddingBottom: `${safeAreaBottom}px`
+        }}
+      >
+        <MessageInput onOptimisticSend={handleOptimisticSend} />
+      </Box>
     </Flex>
   );
 };

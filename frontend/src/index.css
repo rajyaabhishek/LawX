@@ -2,15 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global mobile reset for chat page */
+/* Global mobile viewport handling */
 @media (max-width: 768px) {
-  /* Ultra-aggressive reset for mobile chat page */
-  .chat-page-container,
-  .chat-page-container * {
-    box-sizing: border-box !important;
-  }
-  
-  /* Force full reset for mobile */
+  /* Ensure proper viewport handling for mobile */
   html, body {
     margin: 0 !important;
     padding: 0 !important;
@@ -27,19 +21,13 @@
     overflow-x: hidden !important;
   }
   
-  /* Chat page specific full-screen overrides */
+  /* Chat page specific improvements */
   .chat-page-container {
+    width: 100% !important;
+    height: 100dvh !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
     overflow: hidden !important;
-    z-index: 9999 !important;
   }
   
   .chat-container-mobile {
@@ -49,102 +37,90 @@
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
   }
   
-  /* Force remove any Chakra UI containers that might add padding */
-  .chakra-container {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-  }
-  
-  /* Force full width for all chat components but keep rounded corners */
-  .mobile-chat-header,
-  .chat-message-container,
-  .chat-input-container {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-  
-  /* Restore nice rounded corners for better design */
+  /* Improve chat component styling */
   .chat-message-bubble {
     border-radius: 18px !important;
+    max-width: 85% !important;
   }
   
   .chat-input {
     border-radius: 20px !important;
   }
   
-  .conversation-item {
-    border-radius: 0 !important; /* Keep conversation items square for list feel */
-  }
-  
-  /* Override any flex containers that might have margins */
-  .chakra-flex {
+  .mobile-chat-header {
+    width: 100% !important;
     margin: 0 !important;
-  }
-  
-  /* Remove any potential spacing from Chakra components */
-  .chakra-stack {
-    margin: 0 !important;
-  }
-  
-  /* Force override any responsive margins/padding */
-  body[data-theme] .chat-page-container,
-  body[data-theme] .chat-container-mobile {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-  }
-  
-  /* Absolute mobile fullscreen chat wrapper */
-  .mobile-fullscreen-chat {
-    position: fixed !important;
+    padding: 12px !important;
+    border-radius: 0 !important;
+    position: sticky !important;
     top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-    z-index: 9999 !important;
-    overflow: hidden !important;
+    z-index: 100 !important;
   }
   
-  /* Nuclear option - force everything in chat page to have no margins/padding */
-  .chat-page-container .chakra-box,
-  .chat-page-container .chakra-flex,
-  .chat-page-container .chakra-stack,
-  .chat-page-container .css-* {
-    margin: 0 !important;
-    padding: initial !important;
-  }
-  
-  /* Override any CSS that might add spacing */
-  .chat-page-container * {
-    margin: initial !important;
-  }
-  
-  /* But restore the necessary padding for specific components */
-  .chat-message-container {
-    padding: 16px !important;
+  .mobile-chat-back-button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 50% !important;
   }
   
   .chat-input-container {
     padding: 12px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 50 !important;
   }
   
-  .mobile-chat-header {
-    padding: 12px !important;
+  .chat-message-container {
+    padding: 16px !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
   
-  /* Send button styling */
-  .chat-send-button {
-    border-radius: 50% !important;
+  /* Online indicator styling */
+  .online-indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background-color: #48BB78;
+    border-radius: 50%;
+    border: 2px solid white;
+    z-index: 10;
+  }
+  
+  /* Touch feedback */
+  .mobile-touch-feedback {
+    transition: all 0.2s ease;
+  }
+  
+  .mobile-touch-feedback:active {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  
+  /* Scrollbar styling */
+  .mobile-scroll-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .mobile-scroll-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .mobile-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .mobile-scroll-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
   }
 }
 
@@ -201,74 +177,40 @@ body * {
   background-color: #1A202C !important;
 }
 
-/* Ensure Chakra components maintain their styling */
+/* Fix any color inheritance issues */
 .chakra-portal,
-.chakra-modal,
-.chakra-popover,
+.chakra-modal__content,
+.chakra-modal__overlay,
+.chakra-drawer__content,
+.chakra-drawer__overlay,
+.chakra-popover__content,
 .chakra-tooltip {
   color: inherit !important;
 }
 
-/* Fix any remaining text visibility issues */
-.chakra-text,
-.chakra-heading,
-.chakra-button,
-.chakra-input {
-  color: inherit !important;
-}
-
-/* --------------------------------------------- */
-/* Additional overrides to ensure Tailwind-based  */
-/* components play nicely with Chakra dark mode   */
-/* --------------------------------------------- */
-
-/* Apply dark backgrounds when Chakra is in dark mode */
+/* Dark mode text color fixes */
 .chakra-ui-dark .bg-white,
-[data-theme="dark"] .bg-white {
-  background-color: #1F2937 !important; /* gray-800 */
+.chakra-ui-dark .bg-gray-50 {
+  background-color: #2D3748 !important;
+  color: #F7FAFC !important;
 }
 
-.chakra-ui-dark .bg-gray-50,
-.chakra-ui-dark .bg-gray-100,
-[data-theme="dark"] .bg-gray-50,
-[data-theme="dark"] .bg-gray-100 {
-  background-color: #2D3748 !important; /* gray-700 */
-}
-
-/* Borders */
 .chakra-ui-dark .border-gray-200,
-.chakra-ui-dark .border-gray-300,
-[data-theme="dark"] .border-gray-200,
-[data-theme="dark"] .border-gray-300 {
-  border-color: #4A5568 !important; /* gray-600 */
+.chakra-ui-dark .border-gray-300 {
+  border-color: #4A5568 !important;
 }
 
-/* Text colors */
 .chakra-ui-dark .text-gray-800,
-[data-theme="dark"] .text-gray-800 {
-  color: #F7FAFC !important; /* white */
-}
-
-.chakra-ui-dark .text-gray-700,
-[data-theme="dark"] .text-gray-700 {
-  color: #E2E8F0 !important; /* gray-200 */
+.chakra-ui-dark .text-gray-700 {
+  color: #F7FAFC !important;
 }
 
 .chakra-ui-dark .text-gray-600,
-[data-theme="dark"] .text-gray-600 {
-  color: #CBD5E0 !important; /* gray-400 */
+.chakra-ui-dark .text-gray-500 {
+  color: #CBD5E0 !important;
 }
 
-.chakra-ui-dark .text-gray-500,
-[data-theme="dark"] .text-gray-500 {
-  color: #A0AEC0 !important; /* gray-500 */
-}
-
-/* =============================================
-   Mobile Responsive Utilities for LawX
-   ============================================= */
-
-/* Hide scrollbars for smooth mobile experience */
+/* Add these utility classes */
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -278,329 +220,119 @@ body * {
   display: none;
 }
 
-/* Mobile-friendly touch targets */
 .mobile-touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* Prevent text from being too small on mobile */
 @media (max-width: 768px) {
   body {
-    font-size: 16px !important; /* Prevents iOS zoom on input focus */
-    margin: 0;
-    padding: 0;
+    font-size: 16px;
+    line-height: 1.5;
   }
-  
-  /* Ensure input fields are appropriately sized */
+
   input, textarea, select {
-    font-size: 16px !important;
+    font-size: 16px;
   }
-  
-  /* Improve button accessibility on mobile */
+
   button, .chakra-button {
     min-height: 44px;
   }
-  
-  /* Make cards more mobile-friendly */
+
   .chakra-box {
     border-radius: 12px;
   }
-  
-  /* Improve modal sizing on mobile */
+
   .chakra-modal__content {
-    margin: 1rem !important;
-    max-height: calc(100vh - 2rem) !important;
+    margin: 16px;
+    border-radius: 16px;
   }
-  
-  /* Better spacing for mobile lists */
+
   .chakra-stack > *:not(:last-child) {
-    margin-bottom: 0.75rem;
+    margin-bottom: 12px;
   }
 }
 
-/* Tablet adjustments */
 @media (min-width: 768px) and (max-width: 1024px) {
-  /* Tablet-specific adjustments */
+  /* Tablet specific adjustments */
   .chakra-container {
-    padding: 1rem;
+    padding: 0 24px;
   }
 }
 
-/* Mobile navigation improvements */
+/* Dark mode chat specific styles */
 @media (max-width: 768px) {
-  /* Better mobile navigation */
-  .mobile-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-top: 1px solid #e2e8f0;
-    z-index: 1000;
-    padding: 0.5rem;
-  }
-  
-  .mobile-nav-dark {
-    background: #1a202c;
-    border-top-color: #4a5568;
-  }
-  
-  /* Enhanced Mobile Chat Styles */
-  .chat-page-container {
-    height: 100vh;
-    overflow: hidden;
-    position: relative;
+  [data-theme="dark"] .mobile-chat-header,
+  [data-theme="dark"] .chat-input-container {
+    background-color: #2D3748 !important;
+    border-color: #4A5568 !important;
   }
 
-  .chat-conversation-list {
-    height: 100vh;
-    overflow-y: auto;
-    background: #f7fafc;
+  [data-theme="dark"] .chat-input {
+    background-color: #4A5568 !important;
+    color: #F7FAFC !important;
   }
 
-  .chat-message-container {
-    overflow-y: auto;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: env(safe-area-inset-bottom);
+  [data-theme="dark"] .chat-input:focus {
+    background-color: #2D3748 !important;
   }
 
-  .chat-container-mobile {
-    position: relative;
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
-    background: #ffffff;
+  [data-theme="dark"] .chat-message-other {
+    background-color: #4A5568 !important;
+    color: #F7FAFC !important;
   }
 
-  .mobile-chat-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding-top: env(safe-area-inset-top);
+  [data-theme="dark"] .conversation-item {
+    background-color: #2D3748 !important;
   }
 
-  .mobile-chat-back-button {
-    appearance: none;
-    -webkit-appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+  [data-theme="dark"] .conversation-item:hover {
+    background-color: #4A5568 !important;
   }
 
-  .mobile-chat-back-button:hover {
-    background: rgba(0, 0, 0, 0.05);
-    transform: scale(1.05);
+  [data-theme="dark"] .conversation-item.active {
+    background-color: #3182CE !important;
   }
 
-  .chat-input-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 25;
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  [data-theme="dark"] .chat-input-container {
+    border-color: #4A5568 !important;
+  }
+}
+
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .chakra-form-control {
+    margin-bottom: 16px;
   }
 
-  .chat-input {
-    font-size: 16px !important;
-    line-height: 1.4;
-    border-radius: 20px;
-    min-height: 48px;
-    padding: 12px 16px;
-    border: none;
-    background: #f7fafc;
-    transition: all 0.2s ease;
-    resize: none;
-    -webkit-appearance: none;
-    appearance: none;
+  .chakra-input-group {
+    flex-direction: column;
   }
 
-  .chat-input:focus {
-    background: #ffffff;
-    box-shadow: 0 0 0 2px #3182ce;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
+  .chakra-input-left-element,
+  .chakra-input-right-element {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 8px 0;
+  }
+}
+
+.mobile-table-container {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .mobile-table-container table {
+    min-width: 600px;
   }
 
-  .chat-send-button {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    border-radius: 50%;
-    background: #3182ce;
-    color: white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(49, 130, 206, 0.3);
-    -webkit-tap-highlight-color: transparent;
-    flex-shrink: 0;
-  }
-
-  .chat-send-button:hover:not(:disabled) {
-    background: #2b77cb;
-    transform: scale(1.05);
-  }
-
-  .chat-send-button:disabled {
-    background: #cbd5e0;
-    opacity: 0.6;
-    transform: none;
-  }
-
-  .chat-message {
-    margin-bottom: 8px;
-    padding: 0 4px;
-  }
-
-  .chat-message-bubble {
-    padding: 12px 16px;
-    border-radius: 18px;
-    max-width: 100%;
-    word-wrap: break-word;
-    font-size: 16px;
-    line-height: 1.4;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-
-  .chat-message-own {
-    background: #3182ce;
-    color: white;
-    margin-left: 48px;
-  }
-
-  .chat-message-other {
-    background: #f7fafc;
-    color: #2d3748;
-    margin-right: 48px;
-  }
-
-  .chat-message-time {
-    margin-top: 4px;
-    font-size: 10px;
-    opacity: 0.7;
-  }
-
-  .chat-message-time-other {
-    text-align: left;
-  }
-
-  .conversation-item {
-    padding: 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
-    cursor: pointer;
-    background: white;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .conversation-item:hover {
-    background: #f7fafc;
-  }
-
-  .conversation-item.active {
-    background: #ebf8ff;
-    border-color: #3182ce;
-  }
-
-  .conversation-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-
-  .online-indicator {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    background: #48bb78;
-    border: 2px solid white;
-    border-radius: 50%;
-  }
-
-  .chat-search-input {
-    font-size: 16px !important;
-    padding: 12px 16px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    background: #f7fafc;
-  }
-
-  .chat-search-input:focus {
-    background: white;
-    border-color: #3182ce;
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
-  }
-
-  /* Keyboard-specific adjustments */
-  .keyboard-adjust {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Enhanced touch feedback */
-  .mobile-touch-feedback {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
-  .mobile-touch-feedback:active {
-    transform: scale(0.98);
-    transition: transform 0.1s ease;
-  }
-
-  /* Improved scrolling for mobile */
-  .mobile-scroll-container {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  /* Better loading skeletons on mobile */
-  .mobile-skeleton {
-    animation: loading 1.5s infinite;
-  }
-
-  @keyframes loading {
-    0% {
-      opacity: 0.6;
-    }
-    50% {
-      opacity: 0.8;
-    }
-    100% {
-      opacity: 0.6;
-    }
-  }
-
-  /* Safe area handling for notched devices */
+  /* Safe area handling */
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
@@ -615,419 +347,5 @@ body * {
 
   .safe-area-right {
     padding-right: env(safe-area-inset-right);
-  }
-}
-
-/* Dark mode mobile chat styles */
-@media (max-width: 768px) {
-  [data-theme="dark"] .mobile-chat-header,
-  .chakra-ui-dark .mobile-chat-header {
-    background: rgba(26, 32, 44, 0.95);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-  }
-
-  [data-theme="dark"] .chat-input,
-  .chakra-ui-dark .chat-input {
-    background: #2d3748;
-    color: #f7fafc;
-  }
-
-  [data-theme="dark"] .chat-input:focus,
-  .chakra-ui-dark .chat-input:focus {
-    background: #4a5568;
-  }
-
-  [data-theme="dark"] .chat-message-other,
-  .chakra-ui-dark .chat-message-other {
-    background: #2d3748;
-    color: #f7fafc;
-  }
-
-  [data-theme="dark"] .conversation-item,
-  .chakra-ui-dark .conversation-item {
-    background: #1a202c;
-    border-bottom-color: rgba(255, 255, 255, 0.05);
-  }
-
-  [data-theme="dark"] .conversation-item:hover,
-  .chakra-ui-dark .conversation-item:hover {
-    background: #2d3748;
-  }
-
-  [data-theme="dark"] .conversation-item.active,
-  .chakra-ui-dark .conversation-item.active {
-    background: #2a4365;
-  }
-
-  [data-theme="dark"] .chat-input-container,
-  .chakra-ui-dark .chat-input-container {
-    background: rgba(26, 32, 44, 0.95);
-    border-top-color: rgba(255, 255, 255, 0.08);
-  }
-}
-
-/* Improve image responsiveness */
-.responsive-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-/* Better mobile form layouts */
-@media (max-width: 640px) {
-  .chakra-form-control {
-    margin-bottom: 1rem;
-  }
-  
-  .chakra-input-group {
-    flex-direction: column;
-  }
-  
-  .chakra-input-left-element,
-  .chakra-input-right-element {
-    position: relative;
-    width: 100%;
-    height: auto;
-    margin-bottom: 0.5rem;
-  }
-}
-
-/* Mobile-friendly table overflow */
-.mobile-table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (max-width: 768px) {
-  .mobile-table-container table {
-    min-width: 600px;
-  }
-}
-
-/* Safe area handling for iOS devices */
-@supports (padding: max(0px)) {
-  .safe-area-top {
-    padding-top: max(1rem, env(safe-area-inset-top));
-  }
-  
-  .safe-area-bottom {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-  
-  .safe-area-left {
-    padding-left: max(1rem, env(safe-area-inset-left));
-  }
-  
-  .safe-area-right {
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
-}
-
-/* =============================================
-   Chat Page Mobile Optimizations - Enhanced
-   ============================================= */
-
-/* Chat page specific improvements with keyboard handling */
-@media (max-width: 768px) {
-  .chat-page-container {
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile browsers */
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* Enhanced conversation list with better touch interaction */
-  .chat-conversation-list {
-    max-height: calc(100vh - 60px);
-    max-height: calc(100dvh - 60px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background: var(--chakra-colors-white);
-  }
-
-  /* Enhanced message container with keyboard awareness */
-  .chat-message-container {
-    height: calc(100vh - 120px);
-    height: calc(100dvh - 120px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: env(keyboard-inset-height, 0px);
-    background: var(--chakra-colors-gray-50);
-  }
-
-  /* Keyboard-aware chat container */
-  .chat-container-mobile {
-    height: 100vh;
-    height: 100dvh;
-    max-height: -webkit-fill-available;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    background: var(--chakra-colors-white);
-  }
-
-  /* Facebook-like mobile chat header */
-  .mobile-chat-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: var(--chakra-colors-white);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--chakra-colors-gray-200);
-    padding: 12px 16px;
-    min-height: 60px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Enhanced back button */
-  .mobile-chat-back-button {
-    padding: 8px;
-    border-radius: 50%;
-    background: transparent;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    min-height: 40px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-
-  .mobile-chat-back-button:hover {
-    background: var(--chakra-colors-gray-100);
-  }
-
-  /* Enhanced chat input area with keyboard handling */
-  .chat-input-container {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--chakra-colors-white);
-    border-top: 1px solid var(--chakra-colors-gray-200);
-    padding: 12px 16px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    z-index: 15;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Facebook-like input styling */
-  .chat-input {
-    font-size: 16px !important;
-    min-height: 44px;
-    border-radius: 20px !important;
-    background: var(--chakra-colors-gray-100) !important;
-    border: none !important;
-    padding: 12px 16px !important;
-    resize: none;
-    max-height: 120px;
-    line-height: 1.4;
-    transition: all 0.2s ease;
-  }
-
-  .chat-input:focus {
-    background: var(--chakra-colors-white) !important;
-    box-shadow: 0 0 0 2px var(--chakra-colors-blue-500) !important;
-  }
-
-  /* Enhanced send button */
-  .chat-send-button {
-    background: var(--chakra-colors-blue-500) !important;
-    border-radius: 50% !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    padding: 0 !important;
-    margin-left: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .chat-send-button:hover {
-    background: var(--chakra-colors-blue-600) !important;
-    transform: scale(1.05);
-  }
-
-  .chat-send-button:disabled {
-    background: var(--chakra-colors-gray-300) !important;
-    transform: none;
-  }
-
-  /* Enhanced message styling - Facebook-like */
-  .chat-message {
-    margin-bottom: 8px;
-    padding: 0 16px;
-  }
-
-  .chat-message-bubble {
-    max-width: 85%;
-    padding: 12px 16px;
-    border-radius: 18px;
-    word-wrap: break-word;
-    position: relative;
-    display: inline-block;
-  }
-
-  .chat-message-own {
-    background: var(--chakra-colors-blue-500);
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 4px;
-  }
-
-  .chat-message-other {
-    background: var(--chakra-colors-gray-200);
-    color: var(--chakra-colors-gray-800);
-    margin-right: auto;
-    border-bottom-left-radius: 4px;
-  }
-
-  /* Message timestamp styling */
-  .chat-message-time {
-    font-size: 11px;
-    opacity: 0.7;
-    margin-top: 4px;
-    text-align: right;
-  }
-
-  .chat-message-time-other {
-    text-align: left;
-  }
-
-  /* Enhanced conversation list items */
-  .conversation-item {
-    padding: 16px;
-    min-height: 72px;
-    border-bottom: 1px solid var(--chakra-colors-gray-100);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .conversation-item:hover {
-    background: var(--chakra-colors-gray-50);
-  }
-
-  .conversation-item.active {
-    background: var(--chakra-colors-blue-50);
-    border-right: 3px solid var(--chakra-colors-blue-500);
-  }
-
-  /* Avatar enhancements */
-  .conversation-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  /* Online indicator */
-  .online-indicator {
-    width: 12px;
-    height: 12px;
-    background: var(--chakra-colors-green-400);
-    border: 2px solid var(--chakra-colors-white);
-    border-radius: 50%;
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-  }
-
-  /* Search improvements in chat */
-  .chat-search-input {
-    font-size: 16px !important;
-    padding: 12px 16px !important;
-    border-radius: 12px !important;
-    background: var(--chakra-colors-gray-100) !important;
-    border: none !important;
-  }
-
-  .chat-search-input:focus {
-    background: var(--chakra-colors-white) !important;
-    box-shadow: 0 0 0 2px var(--chakra-colors-blue-500) !important;
-  }
-
-  /* Keyboard-specific adjustments */
-  @supports (height: 100dvh) {
-    .keyboard-adjust {
-      height: calc(100dvh - env(keyboard-inset-height, 0px));
-    }
-  }
-
-  /* Visual feedback for touch interactions */
-  .mobile-touch-feedback {
-    transition: transform 0.1s ease, opacity 0.1s ease;
-  }
-
-  .mobile-touch-feedback:active {
-    transform: scale(0.98);
-    opacity: 0.8;
-  }
-
-  /* Improved scrolling performance */
-  .mobile-scroll-container {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    scroll-behavior: smooth;
-  }
-
-  /* Loading states for mobile */
-  .mobile-skeleton {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
-
-  @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
-}
-
-/* Dark mode support for enhanced chat */
-@media (max-width: 768px) {
-  [data-theme="dark"] .mobile-chat-header,
-  [data-theme="dark"] .chat-input-container {
-    background: var(--chakra-colors-gray-800);
-    border-color: var(--chakra-colors-gray-600);
-  }
-
-  [data-theme="dark"] .chat-input {
-    background: var(--chakra-colors-gray-700) !important;
-    color: var(--chakra-colors-white);
-  }
-
-  [data-theme="dark"] .chat-input:focus {
-    background: var(--chakra-colors-gray-600) !important;
-  }
-
-  [data-theme="dark"] .chat-message-other {
-    background: var(--chakra-colors-gray-700);
-    color: var(--chakra-colors-white);
-  }
-
-  [data-theme="dark"] .conversation-item {
-    border-color: var(--chakra-colors-gray-700);
-  }
-
-  [data-theme="dark"] .conversation-item:hover {
-    background: var(--chakra-colors-gray-700);
-  }
-
-  [data-theme="dark"] .conversation-item.active {
-    background: var(--chakra-colors-blue-900);
   }
 }
