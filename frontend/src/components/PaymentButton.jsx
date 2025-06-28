@@ -15,20 +15,23 @@ const PaymentButton = ({
   const [error, setError] = useState(null);
   const { isSignedIn, user, isLoaded } = useUser();
 
-  // Pricing configuration matching backend
+  // Display pricing in USD for better UX, but backend processes in INR for Cashfree compatibility
   const PRICING = {
     monthly: {
-      price: 399.00,
-      currency: 'INR',
+      // displayPrice: '$5/month',
+      displayCurrency: 'USD',
+      backendPrice: 415.00, // INR equivalent processed by backend
+      backendCurrency: 'INR',
       description: 'Monthly Premium',
-      displayPrice: '₹399/month'
+      savings: null
     },
     yearly: {
-      price: 3599.00,
-      currency: 'INR',
+      // displayPrice: '$50/year',
+      displayCurrency: 'USD', 
+      backendPrice: 4150.00, // INR equivalent processed by backend
+      backendCurrency: 'INR',
       description: 'Yearly Premium',
-      displayPrice: '₹3599/year',
-      savings: 'Save ₹1189!'
+      savings: 'Save $10!'
     }
   };
 
@@ -77,21 +80,35 @@ const PaymentButton = ({
       return;
     }
 
+    if (!selectedPlan) {
+      setError('Invalid plan selected');
+      toast.error('Invalid plan selected');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     let notificationShown = false;
     
     try {
-      // Dynamically import Cashfree SDK
+      // Load Cashfree SDK
       const { load } = await import('@cashfreepayments/cashfree-js');
       
+      // Initialize Cashfree with environment mode
+      const mode = import.meta.env.MODE === 'production' ? 'production' : 'sandbox';
+      console.log('🔧 Cashfree mode:', mode);
+      
       const cashfree = await load({
-        mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
+        mode: mode
       });
 
-      console.log('Cashfree loaded successfully');
+      if (!cashfree) {
+        throw new Error('Failed to load Cashfree SDK');
+      }
 
-      // Create payment order
+      console.log('Cashfree SDK loaded successfully');
+
+      // Create payment order using existing backend
       const orderResponse = await axiosInstance.post('/payments/create-order', {
         planId: planType
       });
@@ -111,7 +128,7 @@ const PaymentButton = ({
           setIsLoading(false);
           
           try {
-            // Verify payment
+            // Verify payment using existing backend
             const verifyResponse = await axiosInstance.post('/payments/verify', {
               orderId: orderData.order_id
             });
@@ -135,7 +152,7 @@ const PaymentButton = ({
                 planType
               );
               
-              toast.success('Payment successful! Your premium subscription is now active.');
+              toast.success('Payment successful! Your subscription is now active.');
               
               // Additional delay to ensure UI updates
               setTimeout(() => {
@@ -162,6 +179,8 @@ const PaymentButton = ({
       };
 
       console.log('Initiating Cashfree checkout with options:', checkoutOptions);
+      
+      // Use the checkout method
       const result = await cashfree.checkout(checkoutOptions);
       console.log('Checkout result:', result);
       
@@ -185,8 +204,11 @@ const PaymentButton = ({
               }
             }
             
-            await handleSubscriptionSuccess(selectedPlan.description, planType);
-            toast.success('Payment successful! Your premium subscription is now active.');
+            await handleSubscriptionSuccess(
+              selectedPlan.description, 
+              planType
+            );
+            toast.success('Payment successful! Your subscription is now active.');
             
             // Additional delay to ensure UI updates
             setTimeout(() => {
@@ -226,7 +248,9 @@ const PaymentButton = ({
           ? 'Processing...' 
           : !isSignedIn 
             ? 'Sign In Required' 
-            : `Buy`
+            : selectedPlan
+              ? `Buy`
+              : `Buy`
         }
       </Button>
       

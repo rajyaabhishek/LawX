@@ -56,18 +56,18 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
     // Use backend plans if available, otherwise fallback to hardcoded
     const plans = plansData?.plans || {
         monthly: { 
-            price: 5.00, 
+            price: 399.00, 
             name: 'Monthly Premium',
-            currency: 'USD',
+            currency: 'INR',
             duration: 30,
             description: 'Monthly premium subscription with full access to all features'
         },
         yearly: { 
-            price: 50.00, 
+            price: 3599.00, 
             name: 'Yearly Premium',
-            currency: 'USD',
+            currency: 'INR',
             duration: 365,
-            description: 'Yearly premium subscription with full access to all features (Save 17%!)'
+            description: 'Yearly premium subscription with full access to all features (Save ₹1189!)'
         }
     };
 
@@ -165,7 +165,7 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                         <Text>Upgrade to Premium</Text>
                     </HStack>
                 </ModalHeader>
-                <ModalCloseButton isDisabled={isProcessing} />
+                <ModalCloseButton isDisabled={isProcessing} /   >
                 
                 <ModalBody pb={6}>
                     <VStack spacing={6} align="stretch">
@@ -230,7 +230,7 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                                                     </Text>
                                                 </HStack>
                                                 <Text fontSize="2xl" fontWeight="bold" color="blue.600">
-                                                    ${plans.monthly.price}
+                                                    ₹{plans.monthly.price}
                                                     <Text as="span" fontSize="sm" color="gray.500" ml={1}>
                                                         /month
                                                     </Text>
@@ -261,7 +261,7 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                                             py={1}
                                             borderRadius="full"
                                         >
-                                            Save ${savings.amount} ({savings.percentage}%)
+                                            Save ₹{savings.amount} ({savings.percentage}%)
                                         </Badge>
                                         
                                         <Radio value="yearly" size="lg">
@@ -273,17 +273,17 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                                                 </HStack>
                                                 <HStack align="baseline">
                                                     <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                                                        ${plans.yearly.price}
+                                                        ₹{plans.yearly.price}
                                                         <Text as="span" fontSize="sm" color="gray.500" ml={1}>
                                                             /year
                                                         </Text>
                                                     </Text>
                                                     <Text fontSize="sm" color="gray.400" textDecoration="line-through">
-                                                        ${plans.monthly.price * 12}
+                                                        ₹{plans.monthly.price * 12}
                                                     </Text>
                                                 </HStack>
                                                 <Text fontSize="sm" color="gray.600">
-                                                    Best value - 2 months free!
+                                                    Best value - save ₹{Math.round(savings.amount)}!
                                                 </Text>
                                             </VStack>
                                         </Radio>

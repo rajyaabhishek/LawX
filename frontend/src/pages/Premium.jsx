@@ -36,13 +36,19 @@ const Premium = () => {
         }
     });
 
-    // Use backend plans if available, otherwise fallback to hardcoded
+    // Display pricing in USD for better UX, backend processes in INR for Cashfree compatibility
     const plans = plansData?.plans || {
         monthly: { 
-            price: 5.00, 
+            displayPrice: 5.00,
+            displayCurrency: 'USD',
+            backendPrice: 415.00, // INR equivalent
+            backendCurrency: 'INR'
         },
         yearly: { 
-            price: 50.00, 
+            displayPrice: 50.00,
+            displayCurrency: 'USD',
+            backendPrice: 4150.00, // INR equivalent
+            backendCurrency: 'INR'
         }
     };
 
@@ -71,8 +77,8 @@ const Premium = () => {
     };
 
     const calculateSavings = () => {
-        const monthlyTotal = plans.monthly.price * 12;
-        const yearlyPrice = plans.yearly.price;
+        const monthlyTotal = (plans.monthly.displayPrice || 5) * 12;
+        const yearlyPrice = plans.yearly.displayPrice || 50;
         const savings = monthlyTotal - yearlyPrice;
         return savings;
     };
@@ -103,7 +109,7 @@ const Premium = () => {
                         borderRadius="xl"
                         _hover={{ 
                             borderColor: "blue.500",
-                            transform: "translateY(-2px)",
+                            // transform: "translateY(-2px)",
                             boxShadow: "xl",
                             transition: "all 0.2s"
                         }}
@@ -117,7 +123,7 @@ const Premium = () => {
                                     Perfect for getting started
                                 </Text>
                                 <Text fontSize="4xl" fontWeight="bold" color="blue.600">
-                                    ${plans.monthly.price}
+                                    $5
                                     <Text as="span" fontSize="lg" color="gray.500" ml={1}>
                                         /month
                                     </Text>
@@ -154,7 +160,7 @@ const Premium = () => {
                                 _hover={{ bg: "blue.700" }}
                                 _active={{ bg: "blue.800" }}
                             >
-                                Buy ${plans.monthly.price}/month
+                                Buy ${plans.monthly.displayPrice}/month
                             </PaymentButton>
                         </VStack>
                     </Card>
@@ -170,7 +176,7 @@ const Premium = () => {
                         boxShadow="lg"
                         _hover={{ 
                             borderColor: "yellow.500",
-                            transform: "translateY(-2px)",
+                            // transform: "translateY(-2px)",
                             boxShadow: "2xl",
                             transition: "all 0.2s"
                         }}
@@ -182,10 +188,10 @@ const Premium = () => {
                                     Annual
                                 </Text>
                                 <Text fontSize="md" color="green.600" fontWeight="semibold">
-                                    Save ${savings} with annual billing
+                                    Save ${calculateSavings()} with annual billing
                                 </Text>
                                 <Text fontSize="4xl" fontWeight="bold" color="green.600">
-                                    ${plans.yearly.price}
+                                    $50
                                     <Text as="span" fontSize="lg" color="gray.500" ml={1}>
                                         /year
                                     </Text>
@@ -199,7 +205,7 @@ const Premium = () => {
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="green.500" />
-                                    Save ${savings} yearly
+                                    Save ${calculateSavings()} yearly
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="green.500" />
@@ -223,7 +229,7 @@ const Premium = () => {
                                 _active={{ bg: "yellow.600" }}
                                 fontWeight="bold"
                             >
-                                Buy ${plans.yearly.price}/year
+                                Buy ${plans.yearly.displayPrice}/year
                             </PaymentButton>
                         </VStack>
                     </Card>

@@ -2,8 +2,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import path, { dirname } from "path";
+import path from "path";
 import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Get the current file and directory paths
 const __filename = fileURLToPath(import.meta.url);
@@ -14,13 +15,13 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import { connectDB } from "./lib/db.js";
 import authRoutes from "./routes/auth.route.js";
-import caseRoutes from "./routes/case.route.js";
 import connectionRoutes from "./routes/connection.route.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import notificationRoutes from "./routes/notification.route.js";
-import paymentRoutes from "./routes/payment.route.js";
 import postRoutes from "./routes/post.route.js";
 import userRoutes from "./routes/user.route.js";
+import caseRoutes from "./routes/case.route.js";
+import paymentRoutes from "./routes/payment.route.js";
 import { app, server } from "./socket/socket.js";
 
 const PORT = process.env.PORT || 5000;

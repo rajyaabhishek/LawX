@@ -162,33 +162,73 @@ export const createComment = async (req, res) => {
 export const likePost = async (req, res) => {
 	try {
 		const postId = req.params.id;
-		const post = await Post.findById(postId);
 		const userId = req.user._id;
 
-		if (post.likes.includes(userId)) {
-			// unlike the post
-			post.likes = post.likes.filter((id) => id.toString() !== userId.toString());
-		} else {
-			// like the post
-			post.likes.push(userId);
-			// create a notification if the post owner is not the user who liked
-			if (post.author.toString() !== userId.toString()) {
-				const newNotification = new Notification({
-					recipient: post.author,
-					type: "like",
-					relatedUser: userId,
-					relatedPost: postId,
-				});
+		console.log(`Like request: postId=${postId}, userId=${userId}`);
 
-				await newNotification.save();
+		// Validate post ID format
+		if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+			return res.status(400).json({ message: "Invalid post ID format" });
+		}
+
+		// Find the post with a single query and populate
+		const post = await Post.findById(postId)
+			.populate("author", "name username profilePicture headline");
+
+		if (!post) {
+			console.log(`Post not found: ${postId}`);
+			return res.status(404).json({ message: "Post not found" });
+		}
+
+		// Ensure likes array exists
+		if (!Array.isArray(post.likes)) {
+			post.likes = [];
+		}
+
+		const isLiked = post.likes.some(id => id.toString() === userId.toString());
+		console.log(`Current like status: ${isLiked ? 'liked' : 'not liked'}`);
+
+		if (isLiked) {
+			// Unlike the post - remove user ID from likes array
+			post.likes = post.likes.filter((id) => id.toString() !== userId.toString());
+			console.log(`Unliked post. New like count: ${post.likes.length}`);
+		} else {
+			// Like the post - add user ID to likes array
+			post.likes.push(userId);
+			console.log(`Liked post. New like count: ${post.likes.length}`);
+			
+			// Create notification if the post owner is not the user who liked
+			if (post.author._id.toString() !== userId.toString()) {
+				try {
+					const newNotification = new Notification({
+						recipient: post.author._id,
+						type: "like",
+						relatedUser: userId,
+						relatedPost: postId,
+					});
+
+					await newNotification.save();
+					console.log("Like notification created");
+				} catch (notificationError) {
+					console.error("Error creating like notification:", notificationError);
+					// Don't fail the like operation if notification fails
+				}
 			}
 		}
 
+		// Save the post with updated likes
 		await post.save();
+		console.log(`Post saved with ${post.likes.length} likes`);
 
-		res.status(200).json(post);
+		// Return the updated post with all populated fields
+		const updatedPost = await Post.findById(postId)
+			.populate("author", "name username profilePicture headline")
+			.populate("comments.user", "name profilePicture");
+
+		console.log(`Returning post with ${updatedPost.likes.length} likes`);
+		res.status(200).json(updatedPost);
 	} catch (error) {
 		console.error("Error in likePost controller:", error);
-		res.status(500).json({ message: "Server error" });
+		res.status(500).json({ message: "Server error", error: error.message });
 	}
 };

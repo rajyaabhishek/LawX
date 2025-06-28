@@ -5,47 +5,47 @@ import User from '../models/user.model.js';
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-// Initialize Cashfree - Using unified variable names for frontend/backend compatibility
-const cashfreeAppId = process.env.REACT_APP_CASHFREE_APP_ID || process.env.CASHFREE_APP_ID;
-const cashfreeSecretKey = process.env.REACT_APP_CASHFREE_SECRET_KEY || process.env.CASHFREE_SECRET_KEY;
-const cashfreeEnvironment = process.env.REACT_APP_CASHFREE_ENVIRONMENT || process.env.CASHFREE_ENVIRONMENT;
+// Initialize Cashfree with proper environment variables
+const cashfreeAppId = process.env.CASHFREE_APP_ID || process.env.REACT_APP_CASHFREE_APP_ID;
+const cashfreeSecretKey = process.env.CASHFREE_SECRET_KEY || process.env.REACT_APP_CASHFREE_SECRET_KEY;
+const cashfreeEnvironment = process.env.CASHFREE_ENVIRONMENT || process.env.REACT_APP_CASHFREE_ENVIRONMENT || 'sandbox';
 
+// Validate Cashfree credentials
 if (!cashfreeAppId || !cashfreeSecretKey) {
-    console.error('❌ Cashfree credentials not found in environment variables');
-    console.log('Please ensure you have set:');
-    console.log('- REACT_APP_CASHFREE_APP_ID');
-    console.log('- REACT_APP_CASHFREE_SECRET_KEY');
-    console.log('- REACT_APP_CASHFREE_ENVIRONMENT');
+    console.error('❌ Missing Cashfree credentials. Please check your .env file.');
+    console.error('Required: CASHFREE_APP_ID and CASHFREE_SECRET_KEY');
 } else {
-    Cashfree.XClientId = cashfreeAppId;
-    Cashfree.XClientSecret = cashfreeSecretKey;
-    Cashfree.XEnvironment = process.env.NODE_ENV === 'production' 
-        ? Cashfree.Environment.PRODUCTION 
-        : Cashfree.Environment.SANDBOX;
-    console.log('✅ Cashfree configured successfully');
-    console.log(`App ID: ${cashfreeAppId.substring(0, 10)}...`);
-    console.log(`Environment: ${cashfreeEnvironment || 'sandbox'}`);
+    console.log('✅ Cashfree credentials loaded');
+    console.log('🔧 Environment:', cashfreeEnvironment);
+    console.log('🔑 App ID:', cashfreeAppId.substring(0, 10) + '...');
 }
 
-// Subscription plans with pricing
-// Supported Cashfree currencies: INR, USD (limited), EUR, GBP, AUD, CAD, SGD
-// For Indian accounts, INR is recommended and most widely supported
+// Set Cashfree environment
+Cashfree.XClientId = cashfreeAppId;
+Cashfree.XClientSecret = cashfreeSecretKey;
+Cashfree.XEnvironment = cashfreeEnvironment === 'production' ? Cashfree.Environment.PRODUCTION : Cashfree.Environment.SANDBOX;
+
+// Subscription plans with pricing - Process in INR for Cashfree compatibility (Frontend displays USD)
 const SUBSCRIPTION_PLANS = {
     monthly: {
         id: 'monthly',
         name: 'Monthly Premium',
-        price: 5.00, // USD price
-        currency: 'USD',
+        price: 415.00, // INR price for Cashfree processing
+        currency: 'INR',
+        displayPrice: 5.00, // USD display price for frontend
+        displayCurrency: 'USD',
         duration: 30, // days
         description: 'Monthly premium subscription with full access to all features'
     },
     yearly: {
         id: 'yearly',
         name: 'Yearly Premium',
-        price: 50.00, // USD price
-        currency: 'USD',
+        price: 4150.00, // INR price for Cashfree processing
+        currency: 'INR',
+        displayPrice: 50.00, // USD display price for frontend
+        displayCurrency: 'USD',
         duration: 365, // days
-        description: 'Yearly premium subscription with full access to all features (Save 25%!)'
+        description: 'Yearly premium subscription with full access to all features (Save $10!)'
     }
 };
 
@@ -170,6 +170,35 @@ export const createPaymentOrder = async (req, res) => {
         const plan = SUBSCRIPTION_PLANS[planId];
         const orderId = generateOrderId();
 
+        // Get return URL - prioritize environment variable, fallback to production URLs for payments
+        const getReturnUrl = () => {
+            if (process.env.CLIENT_URL) {
+                return `${process.env.CLIENT_URL}/premium/success?order_id={order_id}`;
+            }
+            // For payment returns, always use HTTPS as payment providers require it
+            if (process.env.NODE_ENV === 'production') {
+                return `https://yourdomain.com/premium/success?order_id={order_id}`;
+            }
+            // Development: Use ngrok or similar HTTPS tunnel
+            // If no tunnel is set up, use localhost but this may fail with payment provider
+            console.warn('⚠️  Payment return URL using HTTP - payment provider may reject this!');
+            console.warn('🔧 For development, set CLIENT_URL=https://your-ngrok-url.app in .env');
+            console.warn('🔧 Or use: npx ngrok http 5173 to create HTTPS tunnel');
+            
+            return process.env.DEV_CLIENT_URL || `http://localhost:5173/premium/success?order_id={order_id}`;
+        };
+
+        // Get webhook URL - can use HTTP for localhost webhooks
+        const getNotifyUrl = () => {
+            if (process.env.SERVER_URL) {
+                return `${process.env.SERVER_URL}/api/v1/payments/webhook`;
+            }
+            if (process.env.NODE_ENV === 'production') {
+                return `https://yourdomain.com/api/v1/payments/webhook`;
+            }
+            return process.env.DEV_SERVER_URL || "http://localhost:5000/api/v1/payments/webhook";
+        };
+
         const request = {
             "order_amount": plan.price,
             "order_currency": plan.currency,
@@ -179,14 +208,18 @@ export const createPaymentOrder = async (req, res) => {
                 "plan": planId,
                 "plan_name": plan.name,
                 "user_id": userId,
-                "return_url": process.env.NODE_ENV === 'production'
-                    ? `${process.env.CLIENT_URL}/premium/success?order_id={order_id}`
-                    : `http://localhost:5173/premium/success?order_id={order_id}`,
-                "notify_url": process.env.NODE_ENV === 'production'
-                    ? `${process.env.SERVER_URL}/api/v1/payments/webhook`
-                    : "http://localhost:5000/api/v1/payments/webhook"
+                "return_url": getReturnUrl(),
+                "notify_url": getNotifyUrl()
             }
         };
+
+        console.log('💳 Payment order request:', {
+            amount: request.order_amount,
+            currency: request.order_currency,
+            orderId: request.order_id,
+            returnUrl: request.order_meta.return_url,
+            notifyUrl: request.order_meta.notify_url
+        });
 
         const response = await Cashfree.PGCreateOrder("2023-08-01", request);
         

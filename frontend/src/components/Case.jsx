@@ -10,13 +10,13 @@ import {
   useDisclosure,
   Divider,
   Textarea,
-  IconButton,
+
   Tooltip,
   HStack,
   VStack,
   Tag,
   TagLabel,
-  TagLeftIcon,
+
   Alert,
   AlertIcon,
   Stack,
@@ -26,10 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
+
+
+
+
   FormControl,
   FormLabel,
   Popover,
@@ -43,6 +43,7 @@ import {
 import { CheckIcon } from "@chakra-ui/icons";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useRecoilValue } from "recoil";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   FiMapPin, 
   FiClock, 
@@ -52,11 +53,11 @@ import {
   FiUsers,
   FiExternalLink,
   FiCheck,
-  FiMoreVertical,
   FiTrash2,
   FiEdit,
   FiSend,
-  FiBriefcase
+  FiBriefcase,
+  FiThumbsUp
 } from "react-icons/fi";
 import userAtom from "../atoms/userAtom";
 import { useAuthContext } from "../context/AuthContext";
@@ -83,14 +84,16 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
     onClose: onApplicantsClose 
   } = useDisclosure();
   const { 
-    isOpen: isDeleteOpen, 
-    onOpen: onDeleteOpen, 
-    onClose: onDeleteClose 
-  } = useDisclosure();
-  const { 
     isOpen: isApplyOpen, 
     onOpen: onApplyOpen, 
     onClose: onApplyClose 
+  } = useDisclosure();
+  
+  // For delete confirmation
+  const { 
+    isOpen: isDeleteOpen, 
+    onOpen: onDeleteOpen, 
+    onClose: onDeleteClose 
   } = useDisclosure();
   
   const recoilUser = useRecoilValue(userAtom);
@@ -101,7 +104,9 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
   const [isApplying, setIsApplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [applicationMessage, setApplicationMessage] = useState("");
+  const [isLiking, setIsLiking] = useState(false);
   const showToast = useShowToast();
+  const queryClient = useQueryClient();
   const cancelRef = useRef();
   
   // Return null if caseData is not available
@@ -148,6 +153,53 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
     return applications.some(app => app.user?._id === currentUser._id);
   }, [applications, currentUser]);
 
+  const isLiked = useMemo(() => {
+    if (!caseData.likes || !currentUser?._id) return false;
+    return caseData.likes.some(like => 
+      (typeof like === 'object' ? like._id : like) === currentUser._id
+    );
+  }, [caseData.likes, currentUser]);
+  
+  const likeCount = useMemo(() => {
+    if (!caseData.likes) return 0;
+    return Array.isArray(caseData.likes) ? caseData.likes.length : 0;
+  }, [caseData.likes]);
+  
+  const { mutate: handleLike } = useMutation({
+    mutationFn: async () => {
+      if (!currentUser) {
+        throw new Error('Please sign in to like cases');
+      }
+      const response = await axiosInstance.post(`/cases/${caseData._id}/like`);
+      return response.data;
+    },
+    onMutate: () => {
+      setIsLiking(true);
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch the cases query to update the UI
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      queryClient.invalidateQueries({ queryKey: ['case', caseData._id] });
+      queryClient.invalidateQueries({ queryKey: ['myCases'] });
+      queryClient.invalidateQueries({ queryKey: ['publicCases'] });
+      
+      // Update the local state immediately for a smoother UX
+      if (onUpdate) {
+        onUpdate({
+          ...caseData,
+          likes: data.case.likes,
+          likeCount: data.likeCount
+        });
+      }
+    },
+    onError: (error) => {
+      showToast("Error", error.message || "Failed to update like status", "error");
+    },
+    onSettled: () => {
+      setIsLiking(false);
+    }
+  });
+
   const handleViewApplicants = useCallback((e) => {
     e.stopPropagation(); // Prevent the card click from opening the main modal
     onApplicantsOpen();
@@ -184,6 +236,12 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
     } finally {
       setIsDeleting(false);
     }
+  };
+  
+  // Handle delete button click
+  const onDeleteClick = (e) => {
+    e.stopPropagation();
+    onDeleteOpen();
   };
 
   const canDelete = useMemo(() => {
@@ -241,6 +299,25 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         transition="all 0.2s ease"
         position="relative"
       >
+        {/* Delete button for case owner */}
+        {isOwner && (
+          <Button
+            position="absolute"
+            top={2}
+            right={2}
+            size="sm"
+            variant="ghost"
+            colorScheme="red"
+            onClick={onDeleteClick}
+            p={1}
+            minW="auto"
+            height="auto"
+            isLoading={isDeleting}
+            aria-label="Delete case"
+          >
+            <FiTrash2 size={16} />
+          </Button>
+        )}
         {/* Header section with minimal status indicators */}
         <Flex justify="space-between" align="flex-start" mb={4}>
           <HStack spacing={3}>
@@ -297,209 +374,191 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
                 </Box>
               </Tooltip>
             )}
-            <Text 
-              fontSize="sm" 
-              color={mutedTextColor}
-              bg="gray.50"
-              _dark={{ bg: "gray.800" }}
-              px={2}
-              py={1}
-              borderRadius="md"
-            >
-              {isRemote ? "Remote" : "On-site"}
-            </Text>
-            
-            {isOwner && (
-              <Menu>
-                <MenuButton
-                  as={IconButton}
-                  aria-label="Case options"
-                  icon={<FiMoreVertical />}
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => e.stopPropagation()}
-                  _hover={{ bg: "gray.100", _dark: { bg: "gray.700" } }}
-                />
-                <MenuList>
-                  {canDelete && (
-                    <MenuItem 
-                      icon={<FiTrash2 />} 
-                      color="red.500"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteOpen();
-                      }}
-                    >
-                      Delete Case
-                    </MenuItem>
-                  )}
-                  {!canDelete && applications?.some(app => app.status === 'accepted') && (
-                    <MenuItem isDisabled>
-                      Cannot delete (has accepted applications)
-                    </MenuItem>
-                  )}
-                </MenuList>
-              </Menu>
-            )}
-          </HStack>
-        </Flex>
-        
-        {/* Title section */}
-        <Heading size="md" mb={3} noOfLines={2} title={title} color={primaryTextColor}>
-          {title || "Untitled Case"}
-        </Heading>
-        
-        {/* Author and time */}
-        <Flex align="center" mb={3}>
-          <Avatar 
-            size="sm" 
-            src={user?.profilePicture} 
-            name={user?.name || user?.username || 'U'}
-            mr={3} 
-          />
-          <Box flex={1}>
-            <Text fontWeight="medium" fontSize="sm" color={primaryTextColor} noOfLines={1}>
-              {user?.name || user?.username || 'Unknown User'}
-            </Text>
-            <Text fontSize="xs" color={mutedTextColor}>
-              {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
-            </Text>
-          </Box>
-        </Flex>
-        
-        {/* Description */}
-        <Text noOfLines={2} mb={4} color={mutedTextColor} fontSize="sm" lineHeight="1.5">
-          {description || "No description provided."}
-        </Text>
-        
-        {/* Info tags - minimal styling */}
-        {(location || deadline || budgetDisplay) && (
-          <Stack direction="row" spacing={4} flexWrap="wrap">
-            {location && !isRemote && (
-              <HStack spacing={1}>
-                <FiMapPin size={14} color="gray" />
-                <Text fontSize="sm" color={mutedTextColor} noOfLines={1}>
-                  {location}
-                </Text>
-              </HStack>
-            )}
-            
-            {deadline && (
-              <HStack spacing={1}>
-                <FiClock size={14} color="gray" />
-                <Text fontSize="sm" color={mutedTextColor}>
-                  Due {formatDate(deadline)}
-                </Text>
-              </HStack>
-            )}
-            
-            {budgetDisplay && (
-              <HStack spacing={1}>
-                <FiDollarSign size={14} color="gray" />
-                <Text fontSize="sm" color={mutedTextColor} noOfLines={1}>
-                  {budgetDisplay}
-                </Text>
-              </HStack>
-            )}
-          </Stack>
-        )}
-
-        {/* Apply Button - Bottom Right Corner */}
-        <Box position="absolute" bottom={4} right={4}>
-          {isOwner ? (
-            <Button 
-              size="sm"
-              bg="gray.100"
-              color="gray.600"
-              _dark={{ bg: "gray.700", color: "gray.400" }}
-              isDisabled
-              leftIcon={<FiBriefcase />}
-            >
-              My Case
-            </Button>
-          ) : !isSignedIn && !currentUser ? (
-            <Button 
-              size="sm"
-              variant="outline"
-              colorScheme="blue"
-              isDisabled
-              leftIcon={<FiSend />}
-            >
-              Login to Apply
-            </Button>
-          ) : hasApplied ? (
-            <Button 
-              size="sm"
-              bg="green.100"
-              color="green.800"
-              _dark={{ bg: "green.800", color: "green.100" }}
-              isDisabled
-              leftIcon={<FiCheck />}
-            >
-              Applied
-            </Button>
-          ) : (
-            <Popover isOpen={isApplyOpen} onClose={onApplyClose} placement="top-end">
-              <PopoverTrigger>
-                <Button 
-                  size="sm"
-                  colorScheme="blue"
-                  leftIcon={<FiSend />}
-                  onClick={onApplyOpen}
-                >
-                  Apply
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent w="400px">
-                <PopoverArrow />
-                <PopoverCloseButton />
-                <PopoverHeader fontWeight="semibold">Apply for this Case</PopoverHeader>
-                <PopoverBody>
-                  <FormControl>
-                    <FormLabel fontSize="sm">Why are you a good fit for this case?</FormLabel>
-                    <Textarea
-                      placeholder="Write a brief message explaining your experience and why you're interested..."
-                      value={applicationMessage}
-                      onChange={(e) => setApplicationMessage(e.target.value)}
-                      minH="100px"
-                      size="sm"
-                    />
-                  </FormControl>
-                  <Button 
-                    mt={3}
-                    w="full"
-                    colorScheme="blue"
-                    onClick={handleApplyForCase}
-                    isLoading={isApplying}
-                    isDisabled={!applicationMessage.trim()}
-                    size="sm"
-                  >
-                    {isApplying ? "Submitting..." : "Submit Application"}
-                  </Button>
-                </PopoverBody>
-              </PopoverContent>
-            </Popover>
-          )}
-        </Box>
-      </Box>
-
-
+          <Text 
+            fontSize="sm" 
+            color={mutedTextColor}
+            bg="gray.50"
+            _dark={{ bg: "gray.800" }}
+            px={2}
+            py={1}
+            borderRadius="md"
+          >
+            {isRemote ? "Remote" : "On-site"}
+          </Text>
+        </HStack>
+      </Flex>
       
-      {/* Applicants Modal */}
-      {showApplicants && caseId && (
-        <CaseApplicants 
-          caseId={caseId} 
-          isOpen={isApplicantsOpen} 
-          onClose={onApplicantsClose}
-          onStatusUpdate={() => {
-            // Trigger a refresh of the case data when application status changes
-            if (onUpdate) {
-              // We could fetch the updated case data here, but for now just trigger a general refresh
-              console.log('Application status updated, should refresh case data');
-            }
-          }}
+      {/* Title section */}
+      <Heading size="md" mb={3} noOfLines={2} title={title} color={primaryTextColor}>
+        {title || "Untitled Case"}
+      </Heading>
+      
+      {/* Author and time */}
+      <Flex align="center" mb={3}>
+        <Avatar 
+          size="sm" 
+          src={user?.profilePicture} 
+          name={user?.name || user?.username || 'U'}
+          mr={3} 
         />
+        <Box flex={1}>
+          <Text fontWeight="medium" fontSize="sm" color={primaryTextColor} noOfLines={1}>
+            {user?.name || user?.username || 'Unknown User'}
+          </Text>
+          <Text fontSize="xs" color={mutedTextColor}>
+            {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+          </Text>
+        </Box>
+      </Flex>
+      
+      {/* Description */}
+      <Text noOfLines={2} mb={4} color={mutedTextColor} fontSize="sm" lineHeight="1.5">
+        {description || "No description provided."}
+      </Text>
+      
+      {/* Info tags - minimal styling */}
+      {(location || deadline || budgetDisplay) && (
+        <Stack direction="row" spacing={4} flexWrap="wrap">
+          {location && !isRemote && (
+            <HStack spacing={1}>
+              <FiMapPin size={14} color="gray" />
+              <Text fontSize="sm" color={mutedTextColor} noOfLines={1}>
+                {location}
+              </Text>
+            </HStack>
+          )}
+          
+          {deadline && (
+            <HStack spacing={1}>
+              <FiClock size={14} color="gray" />
+              <Text fontSize="sm" color={mutedTextColor}>
+                Due {formatDate(deadline)}
+              </Text>
+            </HStack>
+          )}
+          
+          {budgetDisplay && (
+            <HStack spacing={1}>
+              <FiDollarSign size={14} color="gray" />
+              <Text fontSize="sm" color={mutedTextColor} noOfLines={1}>
+                {budgetDisplay}
+              </Text>
+            </HStack>
+          )}
+        </Stack>
       )}
+
+      {/* Like and Apply Buttons - Bottom Right Corner */}
+      <Flex position="absolute" bottom={4} right={4} gap={2} alignItems="center">
+        {/* Like Button */}
+        <Button
+          size="sm"
+          variant="ghost"
+          colorScheme={isLiked ? "blue" : "gray"}
+          leftIcon={<FiThumbsUp />}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleLike();
+          }}
+          isLoading={isLiking}
+          disabled={isLiking || !isSignedIn}
+          title={isSignedIn ? "Like this case" : "Sign in to like"}
+        >
+          {likeCount > 0 ? likeCount : ''}
+        </Button>
+        {isOwner ? (
+          <Button 
+            size="sm"
+            bg="gray.100"
+            color="gray.600"
+            _dark={{ bg: "gray.700", color: "gray.400" }}
+            isDisabled
+            leftIcon={<FiBriefcase />}
+          >
+            My Case
+          </Button>
+        ) : !isSignedIn && !currentUser ? (
+          <Button 
+            size="sm"
+            variant="outline"
+            colorScheme="blue"
+            isDisabled
+            leftIcon={<FiSend />}
+          >
+            Login to Apply
+          </Button>
+        ) : hasApplied ? (
+          <Button 
+            size="sm"
+            bg="green.100"
+            color="green.800"
+            _dark={{ bg: "green.800", color: "green.100" }}
+            isDisabled
+            leftIcon={<FiCheck />}
+          >
+            Applied
+          </Button>
+        ) : (
+          <Popover isOpen={isApplyOpen} onClose={onApplyClose} placement="top-end">
+            <PopoverTrigger>
+              <Button 
+                size="sm"
+                colorScheme="blue"
+                leftIcon={<FiSend />}
+                onClick={onApplyOpen}
+              >
+                Apply
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent w="400px">
+              <PopoverArrow />
+              <PopoverCloseButton />
+              <PopoverHeader fontWeight="semibold">Apply for this Case</PopoverHeader>
+              <PopoverBody>
+                <FormControl>
+                  <FormLabel fontSize="sm">Why are you a good fit for this case?</FormLabel>
+                  <Textarea
+                    placeholder="Write a brief message explaining your experience and why you're interested..."
+                    value={applicationMessage}
+                    onChange={(e) => setApplicationMessage(e.target.value)}
+                    minH="100px"
+                    size="sm"
+                  />
+                </FormControl>
+                <Button 
+                  mt={3}
+                  w="full"
+                  colorScheme="blue"
+                  onClick={handleApplyForCase}
+                  isLoading={isApplying}
+                  isDisabled={!applicationMessage.trim()}
+                  size="sm"
+                >
+                  {isApplying ? "Submitting..." : "Submit Application"}
+                </Button>
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
+        )}
+      </Flex>
+
+    </Box>
+
+    {/* Applicants Modal */}
+    {showApplicants && caseId && (
+      <CaseApplicants 
+        caseId={caseId} 
+        isOpen={isApplicantsOpen} 
+        onClose={onApplicantsClose}
+        onStatusUpdate={() => {
+          // Trigger a refresh of the case data when application status changes
+          if (onUpdate) {
+            // We could fetch the updated case data here, but for now just trigger a general refresh
+            console.log('Application status updated, should refresh case data');
+          }
+        }}
+      />
+    )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog
@@ -515,11 +574,6 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
 
             <AlertDialogBody>
               Are you sure you want to delete this case? This action cannot be undone.
-              {applications?.length > 0 && (
-                <Text mt={2} color="orange.500" fontSize="sm">
-                  Note: This case has {applications.length} application{applications.length !== 1 ? 's' : ''}.
-                </Text>
-              )}
             </AlertDialogBody>
 
             <AlertDialogFooter>
@@ -531,7 +585,6 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
                 onClick={handleDeleteCase} 
                 ml={3}
                 isLoading={isDeleting}
-                loadingText="Deleting..."
               >
                 Delete
               </Button>

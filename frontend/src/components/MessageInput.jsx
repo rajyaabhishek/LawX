@@ -8,6 +8,7 @@ import {
   useColorModeValue,
   Button,
   Text,
+  Textarea,
 } from "@chakra-ui/react";
 import { useRef, useState, useEffect } from "react";
 import { FiSend } from "react-icons/fi";
@@ -28,10 +29,16 @@ const MessageInput = ({ onSendMessage }) => {
   const inputRef = useRef(null);
   const { socket } = useSocket();
 
-  // Auto-focus input when conversation changes
+  // Auto-focus input when conversation changes (only on desktop to avoid keyboard issues on mobile)
   useEffect(() => {
     if (selectedConversation?._id) {
-      inputRef.current?.focus();
+      // Only auto-focus on desktop/tablet, not on mobile
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      if (!isMobile && inputRef.current) {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
     }
   }, [selectedConversation]);
 
@@ -76,6 +83,11 @@ const MessageInput = ({ onSendMessage }) => {
     try {
       // Clear input immediately for better UX
       setMessageText('');
+      
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+      }
       
       // Call the parent component's optimistic update first
       if (onSendMessage) {
@@ -136,46 +148,109 @@ const MessageInput = ({ onSendMessage }) => {
     }
   };
 
+  // Auto-resize textarea
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setMessageText(value);
+    handleTyping();
+
+    // Auto-resize textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const scrollHeight = inputRef.current.scrollHeight;
+      const maxHeight = 120; // Maximum height for the textarea
+      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+  };
+
   return (
     <Box 
-      p={1} 
-      borderTopWidth="1px"
-      bg={useColorModeValue("white", "gray.800")}
+      p={0} 
+      borderTopWidth="0"
+      bg="transparent"
+      w="100%"
     >
-      <form onSubmit={handleSendMessage}>
-        <InputGroup size="sm">
-          <Input
-            ref={inputRef}
-            placeholder="Type a message..."
-            value={messageText}
-            onChange={(e) => {
-              setMessageText(e.target.value);
-              handleTyping();
-            }}
-            onKeyDown={handleKeyDown}
-            borderRadius="full"
-            bg={useColorModeValue("gray.100", "gray.700")}
-            border="none"
-            _focus={{
-              bg: useColorModeValue("white", "gray.600"),
-              boxShadow: "sm"
-            }}
-            pr="12"
-            size="sm"
-          />
-          <InputRightElement>
-            <IconButton
-              type="submit"
-              aria-label="Send message"
-              icon={<FiSend />}
-              size="sm"
-              colorScheme="blue"
-              borderRadius="full"
-              isLoading={isSending}
-              isDisabled={!messageText.trim() || isSending}
+      <form onSubmit={handleSendMessage} style={{ width: '100%' }}>
+        <Flex gap={3} align="flex-end" w="100%">
+          <Box flex={1}>
+            <Textarea
+              ref={inputRef}
+              placeholder="Type a message..."
+              value={messageText}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              borderRadius={{ base: "16px", md: "20px" }}
+              bg={useColorModeValue("gray.100", "gray.700")}
+              border="none"
+              _focus={{
+                bg: useColorModeValue("white", "gray.600"),
+                boxShadow: "0 0 0 2px var(--chakra-colors-blue-500)",
+                borderColor: "transparent"
+              }}
+              _placeholder={{
+                color: useColorModeValue("gray.500", "gray.400")
+              }}
+              size="md"
+              minH="48px"
+              maxH="120px"
+              fontSize="16px"
+              px={4}
+              py={3}
+              className="chat-input mobile-touch-feedback"
+              transition="all 0.2s ease"
+              resize="none"
+              rows={1}
+              lineHeight="1.4"
+              css={{
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+              style={{
+                height: 'auto',
+                overflow: 'hidden'
+              }}
             />
-          </InputRightElement>
-        </InputGroup>
+          </Box>
+          
+          <Button
+            type="submit"
+            isLoading={isSending}
+            isDisabled={!messageText.trim() || isSending}
+            colorScheme="blue"
+            size="lg"
+            borderRadius="50%"
+            w="48px"
+            h="48px"
+            minW="48px"
+            p={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            className="chat-send-button mobile-touch-feedback"
+            bg={useColorModeValue("blue.500", "blue.500")}
+            color="white"
+            _hover={{
+              bg: useColorModeValue("blue.600", "blue.600"),
+              transform: "scale(1.05)"
+            }}
+            _active={{
+              transform: "scale(0.95)"
+            }}
+            _disabled={{
+              bg: useColorModeValue("gray.300", "gray.600"),
+              transform: "none",
+              opacity: 0.6
+            }}
+            transition="all 0.2s ease"
+            boxShadow="0 2px 8px rgba(66, 153, 225, 0.3)"
+            flexShrink={0}
+          >
+            <FiSend size={20} />
+          </Button>
+        </Flex>
       </form>
     </Box>
   );

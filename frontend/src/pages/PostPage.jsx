@@ -10,14 +10,21 @@ import {
 import { axiosInstance } from "../lib/axios";
 import Sidebar from "../components/Sidebar";
 import Post from "../components/Post";
+import { useAuthContext } from "../context/AuthContext";
 
 const PostPage = () => {
 	const { postId } = useParams();
-	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+	const { isSignedIn } = useAuthContext();
+	
+	const { data: authUser } = useQuery({ 
+		queryKey: ["authUser"],
+		enabled: isSignedIn 
+	});
 
 	const { data: post, isLoading } = useQuery({
 		queryKey: ["post", postId],
 		queryFn: () => axiosInstance.get(`/posts/${postId}`),
+		enabled: !!postId, // Enable for all users but only when postId exists
 	});
 
 	const textColor = useColorModeValue("gray.800", "white");

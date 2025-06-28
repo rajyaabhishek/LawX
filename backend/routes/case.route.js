@@ -8,7 +8,8 @@ import {
   getCaseApplicants,
   applyForCase,
   updateApplicationStatus,
-  getPublicCases
+  getPublicCases,
+  likeCase
 } from "../controllers/case.controller.js";
 import { protectRoute, checkUserRole, checkPremiumUser, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
 import Case from "../models/Case.js";
@@ -66,6 +67,9 @@ router.patch(
 router.patch("/:caseId/status", async (req, res) => {
   // Implementation would go here
 });
+
+// Like/Unlike a case
+router.post("/:caseId/like", likeCase);
 
 // Update case details
 router.patch("/:caseId", async (req, res) => {

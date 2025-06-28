@@ -49,8 +49,14 @@ import MessageContainer from "./MessageContainer";
 import { useSocket } from "../context/SocketContext";
 import useShowToast from "../hooks/useShowToast";
 import { axiosInstance } from "../lib/axios";
+import { useNavigate } from "react-router-dom";
 
 const ChatPopup = ({ isOpen, onClose }) => {
+  const { user: currentUser, isSignedIn } = useUser();
+  
+  // Don't render if not signed in or not open - move this before other hooks
+  if (!isOpen || !isSignedIn || !currentUser) return null;
+
   const [isMinimized, setIsMinimized] = useState(false);
   const [width, setWidth] = useState(800);
   const [height, setHeight] = useState(500);
@@ -64,11 +70,11 @@ const ChatPopup = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [selectedConversation, setSelectedConversation] = useRecoilState(selectedConversationAtom);
   const [conversations, setConversations] = useRecoilState(conversationsAtom);
-  const { user: currentUser, isSignedIn } = useUser();
   const [currentUserData, setCurrentUserData] = useState(null);
   const showToast = useShowToast();
   const { socket, onlineUsers } = useSocket();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   
   const chatRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -553,11 +559,14 @@ const ChatPopup = ({ isOpen, onClose }) => {
     document.addEventListener('mouseup', handleMouseUp);
   }, [width]);
 
-  // Don't render if not signed in or not open
-  if (!isOpen || !isSignedIn || !currentUser) return null;
-
   // Mobile version uses Drawer
+  const handleUpgradeToPremium = () => {
+    onClose();
+    navigate('/premium');
+  };
+  
   if (isMobile) {
+
     const renderConversationList = () => (
       <Box w="full" h="full" overflowY="auto">
         {/* Search Bar */}
@@ -684,24 +693,100 @@ const ChatPopup = ({ isOpen, onClose }) => {
     );
 
     return (
-      <Drawer isOpen={isOpen} onClose={onClose} size="full" placement="right">
+      <Drawer 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        size="full" 
+        placement="right"
+        variant=""
+        blockScrollOnMount={false}
+      >
         <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          {/* Show header only when conversation list is visible */}
-          { !selectedConversation._id && (
-            <DrawerHeader borderBottomWidth="1px">
+        <DrawerContent 
+          display="flex" 
+          flexDirection="column"
+          maxHeight="100dvh"
+          height="100%"
+          className="chat-container-mobile"
+          css={{
+            '--safezone-top': 'env(safe-area-inset-top, 0px)',
+            '--safezone-bottom': 'env(safe-area-inset-bottom, 0px)',
+            '--safezone-left': 'env(safe-area-inset-left, 0px)',
+            '--safezone-right': 'env(safe-area-inset-right, 0px)',
+          }}
+        >
+          <DrawerHeader 
+            borderBottomWidth="1px" 
+            p={4}
+            position="relative"
+            flexShrink={0}
+            className="mobile-chat-header"
+          >
+            <HStack justify="space-between" w="100%">
               <HStack spacing={2}>
                 <Box w="24px" h="24px" bg="orange.500" borderRadius="full" />
                 <Text fontWeight="bold" color={textColor} fontSize="lg">
-                  Chats
+                  {selectedConversation._id ? 'Chat' : 'Chats'}
                 </Text>
               </HStack>
-            </DrawerHeader>
-          ) }
-          <DrawerBody p={0}>
+              
+              {selectedConversation._id ? (
+                <Box
+                  as="button"
+                  className="mobile-chat-back-button mobile-touch-feedback"
+                  onClick={() => setSelectedConversation({})}
+                  aria-label="Back to conversations"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  w="40px"
+                  h="40px"
+                  borderRadius="50%"
+                  bg="transparent"
+                  _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+                  transition="all 0.2s ease"
+                >
+                  <ChevronLeftIcon boxSize={5} />
+                </Box>
+              ) : (
+                <HStack>
+                  <Button 
+                    size="sm" 
+                    colorScheme="orange" 
+                    variant="outline"
+                    onClick={handleUpgradeToPremium}
+                    className="mobile-touch-feedback"
+                    minH="44px"
+                  >
+                    Premium
+                  </Button>
+                  <DrawerCloseButton position="relative" top={0} right={0} />
+                </HStack>
+              )}
+            </HStack>
+          </DrawerHeader>
+          
+          <DrawerBody 
+            p={0} 
+            flex="1" 
+            display="flex" 
+            flexDirection="column"
+            className="mobile-scroll-container"
+            css={{
+              '--keyboard-inset': '0px',
+              '@supports (height: 100svh)': {
+                height: 'calc(100dvh - var(--chakra-sizes-16) - var(--safezone-top) - var(--safezone-bottom))',
+              },
+              '@supports not (height: 100svh)': {
+                height: 'calc(100vh - var(--chakra-sizes-16) - var(--safezone-top) - var(--safezone-bottom))',
+              },
+            }}
+          >
             {selectedConversation._id ? (
-              <MessageContainer onlineUsers={onlineUsers} />
+              <MessageContainer 
+                onlineUsers={onlineUsers} 
+                isMobile={true}
+              />
             ) : (
               renderConversationList()
             )}
@@ -725,6 +810,14 @@ const ChatPopup = ({ isOpen, onClose }) => {
       zIndex={9999}
       overflow="hidden"
       ref={chatRef}
+      css={{
+        '@supports (height: 100svh)': {
+          maxHeight: '100dvh',
+        },
+        '@supports not (height: 100svh)': {
+          maxHeight: '100vh',
+        },
+      }}
     >
       {/* Resize handle */}
       <Box
@@ -917,11 +1010,41 @@ const ChatPopup = ({ isOpen, onClose }) => {
         </Box>
 
         {/* Right Panel - Chat View (Wider) */}
-        <Box flex="1" bg={rightPanelBg} display="flex" flexDirection="column">
+        <Box 
+          flex="1" 
+          bg={rightPanelBg} 
+          display="flex" 
+          flexDirection="column"
+          position="relative"
+          css={{
+            '@supports (height: 100svh)': {
+              height: '100dvh',
+            },
+            '@supports not (height: 100svh)': {
+              height: '100vh',
+            },
+          }}
+        >
           {selectedConversation?.userId ? (
             <>
               {/* Messages Area */}
-              <Box flex="1" overflowY="auto" p={6}>
+              <Box 
+                flex="1" 
+                overflowY="auto" 
+                p={4}
+                css={{
+                  '--safezone-top': 'env(safe-area-inset-top, 0px)',
+                  '--safezone-bottom': 'env(safe-area-inset-bottom, 0px)',
+                  '--safezone-left': 'env(safe-area-inset-left, 0px)',
+                  '--safezone-right': 'env(safe-area-inset-right, 0px)',
+                  '@supports (height: 100svh)': {
+                    maxHeight: 'calc(100dvh - 120px - var(--safezone-bottom))',
+                  },
+                  '@supports not (height: 100svh)': {
+                    maxHeight: 'calc(100vh - 120px - var(--safezone-bottom))',
+                  },
+                }}
+              >
                 {loadingConversations ? (
                   // Loading skeleton
                   [...Array(3)].map((_, i) => (
@@ -936,7 +1059,7 @@ const ChatPopup = ({ isOpen, onClose }) => {
                       mb={3}
                     >
                       {i % 2 === 0 && <SkeletonCircle size={8} />}
-                      <VStack align="start" spacing={1}>
+                      <VStack align="start" flex="1" spacing={1}>
                         <Skeleton h="16px" w="200px" />
                         <Skeleton h="12px" w="150px" />
                       </VStack>
@@ -1065,10 +1188,20 @@ const ChatPopup = ({ isOpen, onClose }) => {
 
               {/* Input Area */}
               <Box
-                p={6}
+                p={4}
+                pt={3}
                 borderTop="1px solid"
                 borderColor={borderColor}
                 bg={bgColor}
+                position="sticky"
+                bottom="0"
+                left="0"
+                right="0"
+                zIndex="docked"
+                css={{
+                  '--safezone-bottom': 'env(safe-area-inset-bottom, 0px)',
+                  paddingBottom: 'calc(0.75rem + var(--safezone-bottom))',
+                }}
               >
                 <Flex align="center" gap={3}>
                   <Input
@@ -1093,6 +1226,9 @@ const ChatPopup = ({ isOpen, onClose }) => {
                     }}
                     py={3}
                     px={4}
+                    fontSize="md"
+                    inputMode="text"
+                    enterKeyHint="send"
                   />
                   <IconButton
                     icon={<FiSend />}

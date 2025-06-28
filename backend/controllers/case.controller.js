@@ -6,15 +6,23 @@ import {
   notifyLawyerAboutApplicationStatus
 } from "../services/notification.service.js";
 import { startConversation } from "./messageController.js";
+import Notification from "../models/notification.model.js";
 
 // Get public cases for landing page (no auth required)
 export const getPublicCases = async (req, res) => {
   try {
-    const publicCases = await Case.find({ status: 'Open' })
+    const publicCases = await Case.find({ 
+  status: 'Open',
+  $or: [
+    { deadline: { $exists: false } },
+    { deadline: { $gt: new Date() } }
+  ]
+})
       .populate('user', 'name username profilePicture')
+      .populate('likes', 'name username profilePicture')
       .sort({ createdAt: -1 })
       .limit(10)
-      .select('title description caseType location budget createdAt');
+      .select('title description caseType location budget createdAt likes');
 
     res.status(200).json({ cases: publicCases });
   } catch (error) {
@@ -39,7 +47,14 @@ export const getAllCases = async (req, res) => {
       limit = 10
     } = req.query;
 
-    const query = { status: 'Open' }; // Only show open cases by default
+    // Only show open cases whose deadline is still in the future (or no deadline set)
+const query = { 
+  status: 'Open',
+  $or: [
+    { deadline: { $exists: false } },
+    { deadline: { $gt: new Date() } }
+  ]
+};
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     // Simple and reliable search like browse cases functionality
@@ -124,6 +139,7 @@ export const getAllCases = async (req, res) => {
     const [cases, total] = await Promise.all([
       Case.find(query)
         .populate('user', 'name username profilePicture')
+        .populate('likes', 'name username profilePicture')
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
@@ -166,6 +182,7 @@ export const getCaseById = async (req, res) => {
       ]
     })
     .populate('user', 'name username profilePicture')
+    .populate('likes', 'name username profilePicture')
     .populate({
       path: 'applications.user',
       select: 'name username profilePicture bio experience specialization'
@@ -483,11 +500,12 @@ export const createCase = async (req, res) => {
 // Get cases posted by the current user
 export const getMyCases = async (req, res) => {
   try {
-    const cases = await Case.find({ user: req.user._id })
-      .populate('user', 'name username profilePicture')
-      .populate('applications.user', 'name username profilePicture')
-      .sort({ createdAt: -1 });
-    res.status(200).json({ cases });
+    const myCases = await Case.find({ user: req.user._id })
+    .populate('user', 'name username profilePicture')
+    .populate('likes', 'name username profilePicture')
+    .populate('applications.user', 'name username profilePicture')
+    .sort({ createdAt: -1 });
+    res.status(200).json({ cases: myCases });
   } catch (error) {
     console.error('Error fetching my cases:', error);
     res.status(500).json({ error: error.message });
@@ -495,6 +513,71 @@ export const getMyCases = async (req, res) => {
 };
 
 // Get cases the current user has applied to
+// Like or unlike a case
+export const likeCase = async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const userId = req.user._id;
+    
+    const caseDoc = await Case.findById(caseId);
+    if (!caseDoc) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    
+    // Check if user already liked the case
+    const likeIndex = caseDoc.likes.findIndex(
+      (id) => id.toString() === userId.toString()
+    );
+    
+    let liked = false;
+    
+    if (likeIndex === -1) {
+      // Like the case
+      caseDoc.likes.push(userId);
+      liked = true;
+      
+      // Create notification if not the case owner
+      if (caseDoc.user.toString() !== userId.toString()) {
+        const notification = new Notification({
+          recipient: caseDoc.user,
+          type: 'like',
+          relatedUser: userId,
+          relatedCase: caseId,
+          message: `${req.user.name} liked your case: ${caseDoc.title}`
+        });
+        await notification.save();
+      }
+    } else {
+      // Unlike the case
+      caseDoc.likes.splice(likeIndex, 1);
+      liked = false;
+    }
+    
+    await caseDoc.save();
+    
+    // Populate likes for the response
+    await caseDoc.populate({
+      path: 'likes',
+      select: 'name username profilePicture'
+    });
+    
+    res.status(200).json({
+      success: true,
+      liked,
+      likeCount: caseDoc.likes.length,
+      case: caseDoc
+    });
+    
+  } catch (error) {
+    console.error('Error in likeCase controller:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update like status',
+      details: error.message 
+    });
+  }
+};
+
 export const getMyApplications = async (req, res) => {
   try {
     const cases = await Case.find({ "applications.user": req.user._id })

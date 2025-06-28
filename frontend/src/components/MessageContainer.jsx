@@ -9,6 +9,9 @@ import { useUser } from "@clerk/clerk-react";
 import { useSocket } from "../context/SocketContext";
 import { axiosInstance } from "../lib/axios";
 import { ArrowLeft } from "lucide-react";
+import { BsCheck2All } from "react-icons/bs";
+import { formatMessageTimestamp } from "../utils/dateUtils";
+import useKeyboardHeight from "../hooks/useKeyboardHeight";
 
 const MessageContainer = ({ onlineUsers = [] }) => {
   const showToast = useShowToast();
@@ -21,6 +24,11 @@ const MessageContainer = ({ onlineUsers = [] }) => {
   const setConversations = useSetRecoilState(conversationsAtom);
   const { user: currentUser, isSignedIn } = useUser();
   const messageEndRef = useRef(null);
+  const { keyboardHeight, isKeyboardOpen } = useKeyboardHeight();
+  const messagesContainerRef = useRef(null);
+
+  // Remove extra bottom gap on mobile by setting safe area inset to 0
+  const safeAreaBottom = 0;
 
   // Optimistically add new message to UI before server response
   const handleOptimisticSend = (text) => {
@@ -250,10 +258,32 @@ const MessageContainer = ({ onlineUsers = [] }) => {
     getMessages();
   }, [selectedConversation, currentUser, showToast]);
 
-  // Auto-scroll to bottom when messages change
+  // Enhanced scroll to bottom when new messages arrive or keyboard state changes
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const scrollToBottom = () => {
+      if (messageEndRef.current) {
+        messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    };
+
+    // Add delays to ensure proper scrolling after layout changes
+    if (isKeyboardOpen) {
+      // When keyboard opens, wait a bit longer for layout to settle
+      setTimeout(scrollToBottom, 400);
+    } else {
+      // When keyboard closes or new messages arrive
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, isKeyboardOpen, keyboardHeight]);
+
+  // Calculate dynamic heights for mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const headerHeight = 60;
+  const inputContainerHeight = 80;
+  
+  const messagesContainerHeight = isMobile 
+    ? `calc(100vh - ${headerHeight}px - ${inputContainerHeight}px - ${keyboardHeight}px - ${safeAreaBottom}px)`
+    : `calc(100vh - 140px)`;
 
   return (
     <Flex
@@ -261,41 +291,80 @@ const MessageContainer = ({ onlineUsers = [] }) => {
       bg={useColorModeValue("white", "gray.800")}
       borderRadius={{ base: 0, md: "md" }}
       p={0}
+      m={0}
       flexDirection="column"
       h="100vh"
       maxW="100%"
+      w="100%"
       position="relative"
+      className="chat-container-mobile"
+      overflow="hidden"
+      style={{
+        margin: 0,
+        padding: 0,
+        borderRadius: isMobile ? 0 : undefined,
+        boxShadow: isMobile ? 'none' : undefined,
+        border: isMobile ? 'none' : undefined
+      }}
     >
+      {/* Enhanced Mobile Chat Header */}
       <Flex 
         w="full" 
-        h="60px" 
+        h={`${headerHeight}px`}
         alignItems="center" 
         gap={3} 
-        px={4}
+        px={{ base: 3, md: 4 }}
         py={2}
         borderBottom="1px solid"
         borderColor={useColorModeValue("gray.200", "gray.700")}
         bg={useColorModeValue("white", "gray.800")}
         position="sticky"
         top={0}
-        zIndex={1}
+        zIndex={20}
+        className="mobile-chat-header"
+        boxShadow="0 1px 3px rgba(0, 0, 0, 0.1)"
+        flexShrink={0}
+        borderRadius={0}
+        m={0}
+        style={{
+          margin: 0,
+          borderRadius: 0,
+          width: '100%'
+        }}
       >
-        <Icon
-          as={ArrowLeft}
-          display={{ base: "block", md: "none" }}
+        <Box
+          as="button"
+          display={{ base: "flex", md: "none" }}
           onClick={() => setSelectedConversation({ _id: "", userId: "" })}
-          cursor="pointer"
-          boxSize={5}
-        />
-        {selectedConversation.userProfilePic && (
-          <Avatar 
-            src={selectedConversation.userProfilePic} 
-            size="sm"
-            name={selectedConversation.username}
-          />
-        )}
-        <Box>
-          <Text fontWeight='600' color={useColorModeValue("gray.800", "white")} noOfLines={1}>
+          className="mobile-chat-back-button mobile-touch-feedback"
+          alignItems="center"
+          justifyContent="center"
+          w="40px"
+          h="40px"
+          borderRadius="50%"
+          bg="transparent"
+          _hover={{ bg: useColorModeValue("gray.100", "gray.700") }}
+          transition="all 0.2s ease"
+        >
+          <Icon as={ArrowLeft} boxSize={5} color={useColorModeValue("gray.700", "gray.300")} />
+        </Box>
+        
+        <Box position="relative">
+          {selectedConversation.userProfilePic && (
+            <Avatar 
+              src={selectedConversation.userProfilePic} 
+              size="sm"
+              name={selectedConversation.username}
+              className="conversation-avatar"
+            />
+          )}
+          {onlineUsers.includes(selectedConversation.userId) && (
+            <Box className="online-indicator" />
+          )}
+        </Box>
+        
+        <Box flex={1} minW={0}>
+          <Text fontWeight='600' color={useColorModeValue("gray.800", "white")} noOfLines={1} fontSize="md">
             {selectedConversation.username}
           </Text>
           <Text fontSize="xs" color={useColorModeValue("gray.500", "gray.400")}>
@@ -303,43 +372,160 @@ const MessageContainer = ({ onlineUsers = [] }) => {
           </Text>
         </Box>
       </Flex>
-      <Flex 
-        flexDir="column" 
-        flex={1} 
-        p={3} 
+      
+      {/* Messages Container with Enhanced Mobile Layout */}
+      <Box 
+        ref={messagesContainerRef}
+        flex={1}
         overflowY="auto"
-        h="calc(100vh - 120px)"
+        overflowX="hidden"
+        h={messagesContainerHeight}
         bg={useColorModeValue("gray.50", "gray.900")}
+        className="chat-message-container mobile-scroll-container"
+        position="relative"
+        w="100%"
+        m={0}
+        p={0}
+        style={{
+          margin: 0,
+          padding: 0,
+          width: '100%'
+        }}
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: useColorModeValue('rgba(0,0,0,0.2)', 'rgba(255,255,255,0.2)'),
+            borderRadius: '4px',
+          },
+        }}
       >
-        {loadingMessages &&
-          [...Array(5)].map((_, i) => (
-            <Flex key={i} gap={2} alignItems={"center"} p={1} borderRadius={"md"}>
-              <SkeletonCircle size={"7"} />
-              <Flex w={"full"} flexDirection={"column"} gap={2}>
-                <Skeleton h='12px' w='125px' />
+        {loadingMessages ? (
+          <Flex flexDir="column" gap={4} p={4}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Flex key={i} gap={3} justify={i % 2 === 0 ? "flex-start" : "flex-end"}>
+                {i % 2 === 0 && <SkeletonCircle size="8" />}
+                <Box
+                  bg={useColorModeValue("gray.200", "gray.700")}
+                  p={3}
+                  borderRadius="18px"
+                  maxW="250px"
+                  className="mobile-skeleton"
+                >
+                  <Skeleton height="14px" />
+                </Box>
+                {i % 2 !== 0 && <SkeletonCircle size="8" />}
               </Flex>
-            </Flex>
-          ))
-        }
-
-        {!loadingMessages &&
-          messages.map((message) => (
-            <Flex
-              key={message._id}
-              direction={"column"}
-              ref={messages.length - 1 === messages.indexOf(message) ? messageEndRef : null}
-            >
-              <Message
-                message={message}
-                ownMessage={message.sender?.toString() !== selectedConversation.userId}
-                key={message._id}
-              />
-            </Flex>
-          ))
-        }
-      </Flex>
-
-      <MessageInput onSendMessage={handleOptimisticSend} />
+            ))}
+          </Flex>
+        ) : (
+          <Flex flexDir="column" gap={1} px={3} py={4} pb={6}>
+            {messages.map((message, index) => {
+              const isOwnMessage = message.sender === currentMongoUser?._id || message.sender === currentUser?.id;
+              const showAvatar = !isOwnMessage && (index === 0 || messages[index - 1]?.sender !== message.sender);
+              
+              return (
+                <Box key={message._id} className="chat-message" mb={2}>
+                  <Flex justify={isOwnMessage ? "flex-end" : "flex-start"} w="100%">
+                    <Flex
+                      direction={isOwnMessage ? "row-reverse" : "row"}
+                      align="flex-end"
+                      gap={2}
+                      maxW={{ base: "90%", md: "85%" }}
+                    >
+                      {/* Avatar for received messages */}
+                      {!isOwnMessage && (
+                        <Box minW="32px" h="32px" display="flex" justifyContent="center" alignSelf="flex-end">
+                          {showAvatar && (
+                            <Avatar 
+                              size="xs" 
+                              src={selectedConversation.userProfilePic} 
+                              name={selectedConversation.username}
+                            />
+                          )}
+                        </Box>
+                      )}
+                      
+                      {/* Message Bubble */}
+                      <Box
+                        className={`chat-message-bubble ${isOwnMessage ? 'chat-message-own' : 'chat-message-other'}`}
+                        bg={isOwnMessage ? "blue.500" : useColorModeValue("gray.200", "gray.700")}
+                        color={isOwnMessage ? "white" : useColorModeValue("gray.800", "white")}
+                        p={3}
+                        borderRadius={{ base: "16px", md: "18px" }}
+                        borderBottomRightRadius={isOwnMessage ? { base: "6px", md: "4px" } : { base: "16px", md: "18px" }}
+                        borderBottomLeftRadius={!isOwnMessage ? { base: "6px", md: "4px" } : { base: "16px", md: "18px" }}
+                        maxW="100%"
+                        position="relative"
+                        wordBreak="break-word"
+                        fontSize={{ base: "16px", md: "15px" }}
+                        lineHeight="1.4"
+                        boxShadow="0 1px 2px rgba(0, 0, 0, 0.1)"
+                      >
+                        <Text>{message.text}</Text>
+                        
+                        {/* Timestamp and Status */}
+                        <Flex
+                          align="center"
+                          justify={isOwnMessage ? "flex-end" : "flex-start"}
+                          gap={1}
+                          mt={1}
+                          className={`chat-message-time ${!isOwnMessage ? 'chat-message-time-other' : ''}`}
+                        >
+                          <Text fontSize="10px" opacity={0.7}>
+                            {formatMessageTimestamp(message.createdAt)}
+                          </Text>
+                          {isOwnMessage && (
+                            <Icon
+                              as={BsCheck2All}
+                              w={3}
+                              h={3}
+                              color={message.seen ? "blue.200" : "gray.400"}
+                            />
+                          )}
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  </Flex>
+                </Box>
+              );
+            })}
+            <div ref={messageEndRef} />
+          </Flex>
+        )}
+      </Box>
+      
+      {/* Enhanced Message Input Container */}
+      
+// Replace the Message Input Container section:
+<Box
+    className="chat-input-container"
+    bg={useColorModeValue("white", "gray.800")}
+    borderTop="1px solid"
+    borderColor={useColorModeValue("gray.200", "gray.700")}
+    p={{ base: 3, md: 4 }}
+    pb={{ base: 3, md: 4 }}  // Simplified padding
+    position={{ base: "absolute", md: "relative" }}  // Changed positioning
+    bottom={0}  // Simplified bottom positioning
+    left={0}
+    right={0}
+    zIndex={25}
+    boxShadow="0 -2px 12px rgba(0, 0, 0, 0.1)"
+    flexShrink={0}
+    minH={`${inputContainerHeight}px`}
+    w="100%"
+    borderRadius={0}
+    style={{
+        margin: 0,
+        transform: 'none'  // Remove transform
+    }}
+>
+    <MessageInput onSendMessage={handleOptimisticSend} />
+</Box>
     </Flex>
   );
 };

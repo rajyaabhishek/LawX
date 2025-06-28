@@ -23,7 +23,7 @@ import { axiosInstance } from "../../lib/axios";
 import { useState } from "react";
 import { useChatPopup } from "../../context/ChatContext";
 
-const Navbar = ({ onMenuClick, isSidebarOpen }) => {
+const Navbar = ({ onMenuClick, isSidebarOpen, isChatPage = false }) => {
 	const { isSignedIn, user } = useUser();
 	const { signOut } = useClerk();
 	const queryClient = useQueryClient();
@@ -51,12 +51,18 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 		enabled: !!isSignedIn,
 	});
 
-	// Theme values
+	// Theme values - ALL useColorModeValue calls at top level
 	const bgColor = useColorModeValue("white", "gray.800");
 	const textColor = useColorModeValue("gray.700", "white");
 	const hoverColor = useColorModeValue("gray.900", "gray.300");
 	const inputBg = useColorModeValue("gray.50", "gray.700");
 	const placeholderColor = useColorModeValue("gray.500", "gray.400");
+	const borderColor = useColorModeValue("gray.200", "gray.700");
+	const inputBorderColor = useColorModeValue("gray.300", "gray.600");
+	const inputHoverBorderColor = useColorModeValue("gray.400", "gray.500");
+	const inputHoverBg = useColorModeValue("white", "gray.600");
+	const inputFocusBg = useColorModeValue("white", "gray.600");
+	const iconHoverBg = useColorModeValue("gray.100", "gray.700");
 
 	const handleSearchSubmit = (e) => {
 		e.preventDefault();
@@ -95,7 +101,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 			right={0}
 			zIndex={1000}
 			borderBottom="1px solid"
-			borderBottomColor={useColorModeValue("gray.200", "gray.700")}
+			borderBottomColor={borderColor}
 			h="60px"
 		>
 					<Box maxW="100%" px={{ base: 2, md: 4 }} h="100%">
@@ -110,7 +116,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 							color={textColor}
 							size={buttonSize}
 							onClick={onMenuClick}
-							_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+							_hover={{ color: hoverColor, bg: iconHoverBg }}
 						/>
 					)}
 					
@@ -123,7 +129,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 							color={textColor}
 							size={buttonSize}
 							onClick={() => setIsSearchExpanded(false)}
-							_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+							_hover={{ color: hoverColor, bg: iconHoverBg }}
 						/>
 					)}
 					
@@ -153,16 +159,16 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 										onChange={(e) => setSearchQuery(e.target.value)}
 										bg={inputBg}
 										border="1px solid"
-										borderColor={useColorModeValue("gray.300", "gray.600")}
+										borderColor={inputBorderColor}
 										borderRadius="full"
 										_hover={{ 
-											borderColor: useColorModeValue("gray.400", "gray.500"),
-											bg: useColorModeValue("white", "gray.600")
+											borderColor: inputHoverBorderColor,
+											bg: inputHoverBg
 										}}
 										_focus={{ 
 											borderColor: "blue.500", 
 											boxShadow: "0 0 0 1px blue.500",
-											bg: useColorModeValue("white", "gray.600")
+											bg: inputFocusBg
 										}}
 										fontSize="14px"
 									/>
@@ -186,16 +192,16 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 										onChange={(e) => setSearchQuery(e.target.value)}
 										bg={inputBg}
 										border="1px solid"
-										borderColor={useColorModeValue("gray.300", "gray.600")}
+										borderColor={inputBorderColor}
 										borderRadius="full"
 										_hover={{ 
-											borderColor: useColorModeValue("gray.400", "gray.500"),
-											bg: useColorModeValue("white", "gray.600")
+											borderColor: inputHoverBorderColor,
+											bg: inputHoverBg
 										}}
 										_focus={{ 
 											borderColor: "blue.500", 
 											boxShadow: "0 0 0 1px blue.500",
-											bg: useColorModeValue("white", "gray.600")
+											bg: inputFocusBg
 										}}
 										fontSize="14px"
 									/>
@@ -217,7 +223,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 									color={textColor}
 									size={buttonSize}
 									onClick={toggleMobileSearch}
-									_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+									_hover={{ color: hoverColor, bg: iconHoverBg }}
 								/>
 							)}
 
@@ -232,7 +238,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 										variant="ghost"
 										color={textColor}
 										size={buttonSize}
-										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+										_hover={{ color: hoverColor, bg: iconHoverBg }}
 										position="relative"
 									>
 										{unreadNotificationCount > 0 && (
@@ -261,7 +267,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 										variant="ghost"
 										color={textColor}
 										size={buttonSize}
-										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+										_hover={{ color: hoverColor, bg: iconHoverBg }}
 										onClick={toggleChat}
 									/>
 
@@ -282,7 +288,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 									)}
 
 									{/* Premium Upgrade Button - Responsive */}
-									{!user?.publicMetadata?.isPremium && (
+									{!user?.publicMetadata?.isPremium && !isChatPage && (
 										<Button
 											size={buttonSize}
 											colorScheme="yellow"
@@ -305,7 +311,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 										variant="ghost"
 										color={textColor}
 										size={buttonSize}
-										_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+										_hover={{ color: hoverColor, bg: iconHoverBg }}
 									/>
 
 									{/* Clerk UserButton - replaces custom profile section */}
@@ -343,7 +349,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen }) => {
 								variant="ghost"
 								color={textColor}
 								size={buttonSize}
-								_hover={{ color: hoverColor, bg: useColorModeValue("gray.100", "gray.700") }}
+								_hover={{ color: hoverColor, bg: iconHoverBg }}
 							/>
 						</>
 					)}

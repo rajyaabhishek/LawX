@@ -12,7 +12,8 @@ import {
   VStack,
   HStack,
   Divider,
-  Icon
+  Icon,
+  useBreakpointValue
 } from "@chakra-ui/react";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -45,6 +46,9 @@ const ChatPage = () => {
     
     // Use ref for timeout ID
     const searchTimeout = useRef(null);
+    
+    // Mobile detection
+    const isMobile = useBreakpointValue({ base: true, md: false });
 
     // Debug selectedConversation changes
     useEffect(() => {
@@ -100,8 +104,6 @@ const ChatPage = () => {
                 console.log("Conversations data:", data);
                 setConversations(data);
 
-                const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
                 if (!isMobile && data.length > 0 && !selectedConversation?._id) {
                     // Auto-select first conversation only on desktop/tablet
                     const firstConversation = data[0];
@@ -131,7 +133,7 @@ const ChatPage = () => {
         };
 
         getConversations();
-    }, [currentUser, isSignedIn, isLoaded, showToast, setConversations, setSelectedConversation, navigate]);
+    }, [currentUser, isSignedIn, isLoaded, showToast, setConversations, setSelectedConversation, navigate, isMobile]);
 
     // ✅ ALL CALLBACKS AND HANDLERS DEFINED CONSISTENTLY
     const handleSearchChange = useCallback(async (e) => {
@@ -292,8 +294,6 @@ const ChatPage = () => {
         });
     };
 
-    const isMobile = useBreakpointValue({ base: true, md: false });
-
     // ✅ CONDITIONAL RENDERING ONLY AFTER ALL HOOKS
     // If user is not authenticated, show loading state while redirect happens
     if (!isLoaded) {
@@ -317,30 +317,49 @@ const ChatPage = () => {
     }
 
     return (
-        <Box w="100%" h="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
+        <Box
+            position="relative"
+            w="100%"
+            h={{ base: "100dvh", md: "100vh" }}
+            bg={useColorModeValue("white", "gray.800")}
+            overflow="hidden"
+        >
             <Flex
-                h="100%"
-                maxW="1200px"
+                h={{ base: "100dvh", md: "100vh" }}
+                maxW={{ base: "100%", md: "1200px" }}
                 mx="auto"
+                w="100%"
                 bg={useColorModeValue("white", "gray.800")}
                 boxShadow={{ base: "none", md: "lg" }}
                 borderRadius={{ base: 0, md: "lg" }}
                 overflow="hidden"
+                position="relative"
             >
                 {/* Conversations Sidebar */}
                 <Box
                     w={{ base: "100%", md: "350px" }}
-                    h="100%"
-                    borderRight="1px solid"
+                    h={{ base: "100dvh", md: "100vh" }}
+                    borderRight={{ base: "none", md: "1px solid" }}
                     borderColor={useColorModeValue("gray.200", "gray.700")}
                     display={{
                         base: selectedConversation._id ? "none" : "block",
                         md: "block"
                     }}
                     overflowY="auto"
+                    bg={useColorModeValue("white", "gray.800")}
+                    flexShrink={0}
                 >
-                    <Box p={3} borderBottom="1px solid" borderColor={useColorModeValue("gray.200", "gray.700")}>
-                        <Text fontSize="xl" fontWeight="bold" mb={3}>
+                    {/* Enhanced Mobile Header */}
+                    <Box 
+                        p={4}
+                        borderBottom="1px solid" 
+                        borderColor={useColorModeValue("gray.200", "gray.700")}
+                        position="sticky"
+                        top={0}
+                        zIndex={10}
+                        bg={useColorModeValue("white", "gray.800")}
+                    >
+                        <Text fontSize="xl" fontWeight="bold" mb={3} color={useColorModeValue("gray.800", "white")}>
                             Messages
                         </Text>
                         <form onSubmit={(e) => { e.preventDefault(); handleSearchChange({ target: { value: searchText } }); }}>
@@ -349,15 +368,23 @@ const ChatPage = () => {
                                     placeholder='Search for a user'
                                     onChange={handleInputChange}
                                     value={searchText}
-                                    size="sm"
-                                    borderRadius="md"
+                                    size="md"
+                                    borderRadius="20px"
                                     flex={1}
+                                    bg={useColorModeValue("gray.100", "gray.700")}
+                                    border="none"
+                                    _focus={{
+                                        bg: useColorModeValue("white", "gray.600"),
+                                        boxShadow: "0 0 0 2px var(--chakra-colors-blue-500)"
+                                    }}
                                 />
                                 <Button 
-                                    size='sm' 
+                                    size='md' 
                                     onClick={() => handleSearchChange({ target: { value: searchText } })}
                                     colorScheme="blue"
                                     px={4}
+                                    borderRadius="20px"
+                                    minH="44px"
                                 >
                                     <SearchIcon />
                                 </Button>
@@ -365,28 +392,91 @@ const ChatPage = () => {
                         </form>
                     </Box>
                     
-                    <Box overflowY="auto" h="calc(100% - 100px)">
+                    <Box 
+                        overflowY="auto" 
+                        h="calc(100vh - 140px)"
+                        css={{
+                            '&::-webkit-scrollbar': {
+                                width: '4px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: 'transparent',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: useColorModeValue('rgba(0,0,0,0.2)', 'rgba(255,255,255,0.2)'),
+                                borderRadius: '4px',
+                            },
+                        }}
+                    >
                         {loadingConversations ? (
-                            Array(5).fill(0).map((_, i) => (
-                                <Flex key={i} p={3} gap={3} alignItems="center">
-                                    <SkeletonCircle size="10" />
-                                    <Box flex={1}>
-                                        <Skeleton h="14px" w="70%" mb={1} />
-                                        <Skeleton h="12px" w="90%" />
-                                    </Box>
-                                </Flex>
-                            ))
+                            <VStack spacing={4} p={4}>
+                                {Array(5).fill(0).map((_, i) => (
+                                    <HStack key={i} w="100%" spacing={3}>
+                                        <SkeletonCircle size="48px" />
+                                        <Box flex={1}>
+                                            <Skeleton h="16px" w="70%" mb={2} />
+                                            <Skeleton h="14px" w="90%" />
+                                        </Box>
+                                    </HStack>
+                                ))}
+                            </VStack>
                         ) : conversations.length > 0 ? (
                             conversations.map((conversation) => {
                                 const otherParticipant = conversation.participantDetails?.find(p => p._id !== currentUser.id) || 
                                                          conversation.participants?.find(p => p._id !== currentUser.id);
                                 return (
-                                    <Conversation
+                                    <HStack
                                         key={conversation._id}
-                                        isOnline={onlineUsers.includes(otherParticipant?._id)}
-                                        conversation={conversation}
+                                        p={4}
+                                        spacing={3}
+                                        cursor="pointer"
+                                        _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
+                                        bg={selectedConversation?._id === conversation._id ? 
+                                            useColorModeValue("blue.50", "blue.900") : "transparent"}
+                                        borderLeft={selectedConversation?._id === conversation._id ? 
+                                            "4px solid" : "4px solid transparent"}
+                                        borderColor="blue.500"
                                         onClick={() => handleConversationSelect(conversation)}
-                                    />
+                                        transition="all 0.2s"
+                                        minH="72px"
+                                    >
+                                        <Box position="relative">
+                                            <Avatar
+                                                src={otherParticipant?.profilePic || otherParticipant?.profilePicture}
+                                                name={otherParticipant?.username || otherParticipant?.name}
+                                                size="md"
+                                            />
+                                            {onlineUsers.includes(otherParticipant?._id) && (
+                                                <Box
+                                                    position="absolute"
+                                                    bottom="0"
+                                                    right="0"
+                                                    w="14px"
+                                                    h="14px"
+                                                    bg="green.400"
+                                                    borderRadius="50%"
+                                                    border="2px solid white"
+                                                />
+                                            )}
+                                        </Box>
+                                        <Box flex={1} minW={0}>
+                                            <Text 
+                                                fontWeight="600" 
+                                                fontSize="md"
+                                                noOfLines={1}
+                                                color={useColorModeValue("gray.800", "white")}
+                                            >
+                                                {otherParticipant?.username || otherParticipant?.name || 'Unknown User'}
+                                            </Text>
+                                            <Text 
+                                                fontSize="sm" 
+                                                color={useColorModeValue("gray.600", "gray.400")}
+                                                noOfLines={1}
+                                            >
+                                                {conversation.lastMessage?.text || "Start a conversation"}
+                                            </Text>
+                                        </Box>
+                                    </HStack>
                                 );
                             })
                         ) : (
@@ -400,16 +490,19 @@ const ChatPage = () => {
                 {/* Chat Area */}
                 <Box 
                     flex={1} 
-                    h="100%"
+                    h={{ base: "100dvh", md: "100vh" }}
                     display={{
                         base: selectedConversation._id ? "flex" : "none",
                         md: "flex"
                     }}
                     flexDirection="column"
                     position="relative"
+                    w="100%"
+                    bg={useColorModeValue("white", "gray.800")}
+                    overflow="hidden"
                 >
                     {selectedConversation._id ? (
-                        <MessageContainer />
+                        <MessageContainer onlineUsers={onlineUsers} />
                     ) : (
                         <Flex 
                             h="100%" 

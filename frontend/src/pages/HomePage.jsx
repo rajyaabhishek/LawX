@@ -6,18 +6,20 @@ import {
 	Icon,
 	Text,
 	Heading,
-	Flex
+	Flex,
+	Button
 } from "@chakra-ui/react";
-import { useUser } from "@clerk/clerk-react";
 import { Users } from "lucide-react";
 import Post from "../components/Post";
 import PostCreation from "../components/PostCreation";
 import RecommendedUser from "../components/RecommendedUser";
 import { axiosInstance } from "../lib/axios";
 import { useMemo } from "react";
+import { useAuthContext } from "../context/AuthContext";
 
 const HomePage = () => {
-	const { isSignedIn } = useUser();
+	const { isSignedIn, currentUser, isAuthenticated } = useAuthContext();
+	
 	const { data: authUser } = useQuery({ 
 		queryKey: ["authUser"],
 		enabled: isSignedIn 
@@ -38,13 +40,28 @@ const HomePage = () => {
 		return recommendedUsers.filter(u => !connectionIds.includes(u._id));
 	}, [recommendedUsers, authUser]);
 
-	const { data: posts } = useQuery({
+	// Allow posts to load for both authenticated users and guests
+	const { data: posts, isLoading: postsLoading, error: postsError } = useQuery({
 		queryKey: ["posts"],
 		queryFn: async () => {
-			const res = await axiosInstance.get("/posts");
-			return res.data;
+			try {
+				const res = await axiosInstance.get("/posts");
+				return res.data;
+			} catch (error) {
+				console.error("Error fetching posts:", error);
+				throw error;
+			}
 		},
-		enabled: isSignedIn
+		enabled: true, // Enable for all users (guests and authenticated)
+		retry: 3, // Retry up to 3 times
+		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+		staleTime: 2 * 60 * 1000, // 2 minutes - posts stay fresh for 2 minutes
+		cacheTime: 5 * 60 * 1000, // 5 minutes - keep posts in cache for 5 minutes
+		refetchOnWindowFocus: false, // Don't refetch when window regains focus
+		refetchOnReconnect: true, // Refetch when internet reconnects
+		onError: (error) => {
+			console.error("Posts query error:", error);
+		}
 	});
 
 	console.log("posts", posts);
@@ -68,16 +85,75 @@ const HomePage = () => {
 			{/* Main Content Area - Posts */}
 			<Box flex="1" w="100%" maxW={{ base: "100%", lg: "640px" }}>
 				<VStack spacing={{ base: 3, md: 2 }} align="stretch">
-					{/* Post Creation */}
-					<PostCreation user={authUser} />
+					{/* Post Creation - Only show for signed-in users */}
+					{isSignedIn && <PostCreation user={authUser} />}
 
 					{/* Posts Feed */}
-					{posts?.map((post) => (
+					{postsLoading && (
+						<Box 
+							bg={cardBg} 
+							borderRadius="lg" 
+							boxShadow="sm"
+							border="1px"
+							borderColor={borderColor}
+							p={{ base: 6, md: 8 }}
+							textAlign="center"
+						>
+							<VStack spacing={3}>
+								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+								<Text color={mutedText}>Loading posts...</Text>
+							</VStack>
+						</Box>
+					)}
+
+					{/* Error State */}
+					{postsError && !postsLoading && (
+						<Box 
+							bg={cardBg} 
+							borderRadius="lg" 
+							boxShadow="sm"
+							border="1px"
+							borderColor="red.200"
+							p={{ base: 6, md: 8 }}
+							textAlign="center"
+						>
+							<VStack spacing={4}>
+								<Icon 
+									as={Users} 
+									boxSize={{ base: 12, md: 16 }}
+									color="red.500" 
+								/>
+								<Heading 
+									size={{ base: "md", md: "lg" }}
+									color="red.500"
+								>
+									Failed to Load Posts
+								</Heading>
+								<Text 
+									color={mutedText}
+									fontSize={{ base: "sm", md: "md" }}
+									textAlign="center"
+								>
+									There was an error loading posts. Please refresh the page to try again.
+								</Text>
+								<Button
+									colorScheme="blue"
+									onClick={() => window.location.reload()}
+									size="sm"
+								>
+									Refresh Page
+								</Button>
+							</VStack>
+						</Box>
+					)}
+
+					{/* Render Posts */}
+					{!postsLoading && !postsError && posts?.filter((p) => p && p._id)?.map((post) => (
 						<Post key={post._id} post={post} />
 					))}
 
 					{/* Empty State */}
-					{posts?.length === 0 && (
+					{!postsLoading && !postsError && posts?.length === 0 && (
 						<Box 
 							bg={cardBg} 
 							borderRadius="lg" 
@@ -104,7 +180,10 @@ const HomePage = () => {
 									fontSize={{ base: "sm", md: "md" }}
 									textAlign="center"
 								>
-									Connect with others to start seeing posts in your feed!
+									{isSignedIn 
+										? "Connect with others to start seeing posts in your feed!"
+										: "Sign up to create and share posts with the community!"
+									}
 								</Text>
 							</VStack>
 						</Box>
@@ -112,8 +191,8 @@ const HomePage = () => {
 				</VStack>
 			</Box>
 
-			{/* Right Sidebar - Recommended Users */}
-			{filteredRecommendedUsers?.length > 0 && (
+			{/* Right Sidebar - Recommended Users - Only show for signed-in users */}
+			{isSignedIn && filteredRecommendedUsers?.length > 0 && (
 				<Box 
 					w={{ base: "100%", lg: "300px" }}
 					display={{ base: "block", lg: "block" }}

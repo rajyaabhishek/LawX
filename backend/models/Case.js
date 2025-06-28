@@ -82,7 +82,11 @@ const caseSchema = new mongoose.Schema({
   applications: [applicationSchema],
   views: { type: Number, default: 0 },
   slug: { type: String, unique: true },
-  tags: [String]
+  tags: [String],
+  likes: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User" 
+  }]
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },
@@ -97,6 +101,11 @@ caseSchema.index({
   location: 'text',
   'caseType': 'text'
 });
+
+// TTL index to automatically remove expired cases once the deadline passes
+// The document will be deleted as soon as the stored `deadline` date is reached.
+// MongoDB's background TTL monitor runs approximately every 60 seconds.
+caseSchema.index({ deadline: 1 }, { expireAfterSeconds: 0 });
 
 // Pre-save hook to create slug
 caseSchema.pre('save', function(next) {

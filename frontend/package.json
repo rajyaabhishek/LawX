@@ -17,11 +17,14 @@
     "@emotion/react": "^11.11.3",
     "@emotion/styled": "^11.11.0",
     "@tanstack/react-query": "^5.55.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",
+    "daisyui": "^4.12.10",
     "date-fns": "^3.6.0",
     "framer-motion": "^10.17.9",
-
     "lucide-react": "^0.439.0",
+    "postcss": "^8.4.45",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.0.0",
@@ -30,12 +33,8 @@
     "react-router-dom": "^6.26.1",
     "recoil": "^0.7.7",
     "socket.io-client": "^4.8.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.45",
     "tailwindcss": "^3.4.10",
-    "vite": "^5.4.19",
-    "daisyui": "^4.12.10"
+    "vite": "^5.4.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

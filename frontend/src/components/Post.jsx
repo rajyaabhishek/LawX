@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
 	Box, 
 	Flex, 
@@ -34,9 +34,22 @@ const Post = ({ post }) => {
 	
 	// Safe user checks for guest mode
 	const isOwner = isSignedIn && currentUser && post.author && currentUser._id === post.author._id;
-	const isLiked = isSignedIn && currentUser && Array.isArray(post.likes) 
-		? post.likes.includes(currentUser._id) 
-		: false;
+
+	// Determine if the current user has liked the post (robust ID comparison)
+	const isLiked = useMemo(() => {
+		if (!isSignedIn || !currentUser || !Array.isArray(post.likes)) return false;
+		return post.likes.some((id) => {
+			const idStr = typeof id === "object" && id !== null && id.toString ? id.toString() : id;
+			return idStr === currentUser._id;
+		});
+	}, [isSignedIn, currentUser, post.likes]);
+
+	// Like count that supports both number and array formats
+	const likesCount = useMemo(() => {
+		if (typeof post.likes === "number") return post.likes;
+		if (Array.isArray(post.likes)) return post.likes.length;
+		return 0;
+	}, [post.likes]);
 
 	const queryClient = useQueryClient();
 
@@ -62,26 +75,130 @@ const Post = ({ post }) => {
 
 	const { mutate: createComment, isPending: isAddingComment } = useMutation({
 		mutationFn: async (newComment) => {
-			await axiosInstance.post(`/posts/${post._id}/comment`, { content: newComment });
+			const res = await axiosInstance.post(`/posts/${post._id}/comment`, { content: newComment });
+			return res.data;
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["posts"] });
+		onSuccess: (updatedPost) => {
+			// Update the posts cache with the server response
+			queryClient.setQueryData(["posts"], (oldPosts) => {
+				if (!oldPosts) return oldPosts;
+				
+				return oldPosts.map((p) => {
+					if (p._id === post._id) {
+						return updatedPost;
+					}
+					return p;
+				});
+			});
+			
+			// Also update the individual post cache
+			queryClient.setQueryData(["post", postId], updatedPost);
+			
+			// Update local comments state
+			setComments(updatedPost.comments || []);
+			
 			toast.success("Comment added successfully");
 		},
 		onError: (err) => {
-			toast.error(err.response.data.message || "Failed to add comment");
+			toast.error(err.response?.data?.message || "Failed to add comment");
 		},
 	});
 
 	const { mutate: likePost, isPending: isLikingPost } = useMutation({
+        mutationKey: ['likePost', post._id],
 		mutationFn: async () => {
-			await axiosInstance.post(`/posts/${post._id}/like`);
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["posts"] });
-			queryClient.invalidateQueries({ queryKey: ["post", postId] });
-		},
-	});
+            const res = await axiosInstance.post(`/posts/${post._id}/like`);
+            return res.data;
+        },
+        onMutate: async () => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries({ queryKey: ["posts"] });
+            await queryClient.cancelQueries({ queryKey: ["post", postId] });
+
+            // Snapshot the previous value
+            const previousPosts = queryClient.getQueryData(["posts"]);
+            const previousPost = queryClient.getQueryData(["post", postId]);
+
+            // Optimistically update posts list
+            queryClient.setQueryData(["posts"], (oldPosts) => {
+                if (!oldPosts) return oldPosts;
+                
+                return oldPosts.map((p) => {
+                    if (p._id === post._id) {
+                        const newLikes = Array.isArray(p.likes) ? [...p.likes] : [];
+                        const alreadyLiked = newLikes.includes(currentUser._id);
+                        
+                        if (alreadyLiked) {
+                            // Remove like
+                            return {
+                                ...p,
+                                likes: newLikes.filter(id => id !== currentUser._id)
+                            };
+                        } else {
+                            // Add like
+                            return {
+                                ...p,
+                                likes: [...newLikes, currentUser._id]
+                            };
+                        }
+                    }
+                    return p;
+                });
+            });
+
+            // Optimistically update individual post if it exists
+            if (previousPost) {
+                queryClient.setQueryData(["post", postId], (oldPost) => {
+                    if (!oldPost) return oldPost;
+                    
+                    const newLikes = Array.isArray(oldPost.likes) ? [...oldPost.likes] : [];
+                    const alreadyLiked = newLikes.includes(currentUser._id);
+                    
+                    if (alreadyLiked) {
+                        return {
+                            ...oldPost,
+                            likes: newLikes.filter(id => id !== currentUser._id)
+                        };
+                    } else {
+                        return {
+                            ...oldPost,
+                            likes: [...newLikes, currentUser._id]
+                        };
+                    }
+                });
+            }
+
+            // Return context for rollback
+            return { previousPosts, previousPost };
+        },
+        onSuccess: (updatedPost, variables, context) => {
+            // Update with server response to ensure accuracy
+            queryClient.setQueryData(["posts"], (oldPosts) => {
+                if (!oldPosts) return oldPosts;
+                
+                return oldPosts.map((p) => {
+                    if (p._id === post._id) {
+                        return updatedPost;
+                    }
+                    return p;
+                });
+            });
+            
+            // Also update the individual post cache
+            queryClient.setQueryData(["post", postId], updatedPost);
+        },
+        onError: (error, variables, context) => {
+            // Rollback on error
+            if (context?.previousPosts) {
+                queryClient.setQueryData(["posts"], context.previousPosts);
+            }
+            if (context?.previousPost) {
+                queryClient.setQueryData(["post", postId], context.previousPost);
+            }
+            
+            toast.error(error.response?.data?.message || "Failed to update like");
+        }
+ 	});
 
 	const handleDeletePost = () => {
 		if (!window.confirm("Are you sure you want to delete this post?")) return;
@@ -114,18 +231,8 @@ const Post = ({ post }) => {
 		if (newComment.trim()) {
 			createComment(newComment);
 			setNewComment("");
-			setComments([
-				...comments,
-				{
-					content: newComment,
-					user: {
-						_id: currentUser._id,
-						name: currentUser.name,
-						profilePicture: currentUser.profilePicture,
-					},
-					createdAt: new Date(),
-				},
-			]);
+			// Don't update local state here - let the server response handle it
+			// This prevents duplicate comments and ensures data consistency
 		}
 	};
 
@@ -189,9 +296,6 @@ const Post = ({ post }) => {
 			}
 		}
 	};
-
-	// Safe data access
-	const likesCount = typeof post.likes === 'number' ? post.likes : (Array.isArray(post.likes) ? post.likes.length : 0);
 
 	return (
 		<Box 
@@ -274,7 +378,7 @@ const Post = ({ post }) => {
 					gap={{ base: 1, md: 2 }}
 				>
 					<PostAction
-						icon={<ThumbsUp size={16} className={isLiked ? "text-blue-500 fill-blue-300" : ""} />}
+						icon={<ThumbsUp size={16} color={isLiked ? "#3182CE" : undefined} fill={isLiked ? "#3182CE" : "none"} />}
 						text={`Like (${likesCount})`}
 						onClick={handleLikePost}
 						isActive={isLiked}
