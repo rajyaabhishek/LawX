@@ -177,7 +177,7 @@ export const createPaymentOrder = async (req, res) => {
             }
             // For payment returns, always use HTTPS as payment providers require it
             if (process.env.NODE_ENV === 'production') {
-                return `https://yourdomain.com/premium/success?order_id={order_id}`;
+                return `https://lawx.onrender.com/premium/success?order_id={order_id}`;
             }
             // Development: Use ngrok or similar HTTPS tunnel
             // If no tunnel is set up, use localhost but this may fail with payment provider
@@ -194,7 +194,7 @@ export const createPaymentOrder = async (req, res) => {
                 return `${process.env.SERVER_URL}/api/v1/payments/webhook`;
             }
             if (process.env.NODE_ENV === 'production') {
-                return `https://yourdomain.com/api/v1/payments/webhook`;
+                return `https://lawx.onrender.com/api/v1/payments/webhook`;
             }
             return process.env.DEV_SERVER_URL || "http://localhost:5000/api/v1/payments/webhook";
         };

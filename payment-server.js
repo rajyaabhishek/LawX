@@ -160,10 +160,10 @@ app.all('/payment', async (req, res) => {
                 "billing_cycle": selectedPlan.billingCycle,
                 "display_price": selectedPlan.displayPrice,
                 "return_url": isProduction 
-                    ? "https://ehealthreport.site/payment/return?order_id={order_id}" 
-                    : "http://localhost:5173/payment/return?order_id={order_id}",
+                    ? "https://lawx.onrender.com/premium/success?order_id={order_id}" 
+                    : "http://localhost:5173/premium/success?order_id={order_id}",
                 "notify_url": isProduction 
-                    ? `${process.env.SERVER_URL || 'https://ecase.onrender.com'}/webhook` 
+                    ? `${process.env.SERVER_URL || 'https://lawx.onrender.com'}/api/v1/payments/webhook` 
                     : `http://localhost:${port}/webhook`
             }
         };
