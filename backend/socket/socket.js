@@ -17,7 +17,10 @@ const corsOptions = {
       "http://localhost:5174",
       "http://localhost:5175",
       "http://localhost:5176",
-      "http://localhost:5177"
+      "http://localhost:5177",
+      "http://localhost:5178",
+      "http://localhost:5179",
+      "http://localhost:5180"
     ];
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -39,7 +42,10 @@ const io = new Server(server, {
       "http://localhost:5174",
       "http://localhost:5175",
       "http://localhost:5176",
-      "http://localhost:5177"
+      "http://localhost:5177",
+      "http://localhost:5178",
+      "http://localhost:5179",
+      "http://localhost:5180"
     ],
     methods: ["GET", "POST"],
     credentials: true,

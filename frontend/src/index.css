@@ -230,24 +230,24 @@ body * {
     font-size: 16px;
     line-height: 1.5;
   }
-
+  
   input, textarea, select {
     font-size: 16px;
   }
-
+  
   button, .chakra-button {
     min-height: 44px;
   }
-
+  
   .chakra-box {
     border-radius: 12px;
   }
-
+  
   .chakra-modal__content {
     margin: 16px;
     border-radius: 16px;
   }
-
+  
   .chakra-stack > *:not(:last-child) {
     margin-bottom: 12px;
   }
@@ -267,7 +267,7 @@ body * {
     background-color: #2D3748 !important;
     border-color: #4A5568 !important;
   }
-
+  
   [data-theme="dark"] .chat-input {
     background-color: #4A5568 !important;
     color: #F7FAFC !important;
@@ -297,13 +297,13 @@ body * {
   [data-theme="dark"] .chat-input-container {
     border-color: #4A5568 !important;
   }
-}
+  }
 
 .responsive-image {
-  max-width: 100%;
+    max-width: 100%;
   height: auto;
   border-radius: 8px;
-}
+  }
 
 @media (max-width: 640px) {
   .chakra-form-control {
@@ -321,11 +321,11 @@ body * {
     height: auto;
     margin: 8px 0;
   }
-}
+  }
 
 .mobile-table-container {
   overflow-x: auto;
-}
+  }
 
 @media (max-width: 768px) {
   .mobile-table-container table {

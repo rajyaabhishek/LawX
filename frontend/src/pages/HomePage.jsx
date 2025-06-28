@@ -7,13 +7,9 @@ import {
 	Text,
 	Heading,
 	Flex,
-	Button,
-	Avatar,
-	HStack,
-	Link,
-	Divider
+	Button
 } from "@chakra-ui/react";
-import { Users, Briefcase, Eye } from "lucide-react";
+import { Users } from "lucide-react";
 import Post from "../components/Post";
 import PostCreation from "../components/PostCreation";
 import RecommendedUser from "../components/RecommendedUser";
@@ -75,11 +71,6 @@ const HomePage = () => {
 	const textColor = useColorModeValue("gray.800", "white");
 	const mutedText = useColorModeValue("gray.600", "gray.400");
 	const borderColor = useColorModeValue("gray.200", "gray.700");
-	const linkColor = useColorModeValue("gray.500", "gray.400");
-
-	// Profile stats (mock data for demo - you can replace with real data)
-	const profileViews = "124";
-	const postImpressions = "1,847";
 
 	return (
 		<Flex 
@@ -91,120 +82,8 @@ const HomePage = () => {
 			mx="auto"
 			px={{ base: 2, md: 0 }}
 		>
-			{/* Left Sidebar - User Profile & Footer */}
-			{isSignedIn && (
-				<Box 
-					w={{ base: "100%", lg: "240px" }}
-					display={{ base: "none", lg: "block" }}
-					position="sticky"
-					top="70px"
-				>
-					{/* User Profile Card */}
-					<Box 
-						bg={sidebarBg} 
-						borderRadius="lg" 
-						boxShadow="sm"
-						border="1px"
-						borderColor={borderColor}
-						overflow="hidden"
-						mb={3}
-					>
-						{/* Profile Header */}
-						<Box 
-							h="60px" 
-							bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-							position="relative"
-						/>
-						
-						{/* Profile Content */}
-						<Box p={4} pt={0}>
-							<Flex direction="column" align="center" mt="-30px">
-								<Avatar
-									src={authUser?.profilePicture}
-									name={authUser?.name || authUser?.username}
-									size="lg"
-									border="3px solid white"
-									mb={3}
-								/>
-								<Text 
-									fontWeight="600" 
-									color={textColor}
-									fontSize="md"
-									textAlign="center"
-									noOfLines={1}
-								>
-									{authUser?.name || authUser?.username}
-								</Text>
-								<Text 
-									fontSize="sm" 
-									color={mutedText}
-									textAlign="center"
-									noOfLines={2}
-									mb={3}
-								>
-									{authUser?.headline || "Legal Professional"}
-								</Text>
-							</Flex>
-							
-							<Divider mb={3} />
-							
-							{/* Profile Stats */}
-							<VStack spacing={2} align="stretch">
-								<HStack justify="space-between">
-									<Text fontSize="xs" color={mutedText}>
-										Profile viewers
-									</Text>
-									<Text fontSize="xs" color="blue.500" fontWeight="600">
-										{profileViews}
-									</Text>
-								</HStack>
-								<HStack justify="space-between">
-									<Text fontSize="xs" color={mutedText}>
-										Post impressions
-									</Text>
-									<Text fontSize="xs" color="blue.500" fontWeight="600">
-										{postImpressions}
-									</Text>
-								</HStack>
-							</VStack>
-						</Box>
-					</Box>
-
-					{/* Footer Links */}
-					<Box 
-						bg={sidebarBg} 
-						borderRadius="lg" 
-						boxShadow="sm"
-						border="1px"
-						borderColor={borderColor}
-						p={4}
-					>
-						<VStack spacing={2} align="start">
-							<Link 
-								fontSize="xs" 
-								color={linkColor}
-								_hover={{ color: "blue.500", textDecoration: "underline" }}
-							>
-								About us
-							</Link>
-							<Link 
-								fontSize="xs" 
-								color={linkColor}
-								_hover={{ color: "blue.500", textDecoration: "underline" }}
-							>
-								Terms and privacy
-							</Link>
-							<Divider />
-							<Text fontSize="xs" color={mutedText}>
-								© Earth 2025
-							</Text>
-						</VStack>
-					</Box>
-				</Box>
-			)}
-
 			{/* Main Content Area - Posts */}
-			<Box flex="1" w="100%" maxW={{ base: "100%", lg: isSignedIn ? "500px" : "640px" }}>
+			<Box flex="1" w="100%" maxW={{ base: "100%", lg: "640px" }}>
 				<VStack spacing={{ base: 3, md: 2 }} align="stretch">
 					{/* Post Creation - Only show for signed-in users */}
 					{isSignedIn && <PostCreation user={authUser} />}
