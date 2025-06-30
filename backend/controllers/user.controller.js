@@ -17,19 +17,81 @@ export const getSuggestedConnections = async (req, res) => {
 			return res.json(suggestedUsers);
 		}
 
-		const currentUser = await User.findById(req.user._id).select("connections");
+		const currentUser = await User.findById(req.user._id)
+			.select("connections specialization role location skills")
+			.populate('connections', '_id');
 
-		// find users who are not already connected, and also do not recommend our own profile!! right?
-		const suggestedUser = await User.find({
-			_id: {
-				$ne: req.user._id,
-				$nin: currentUser.connections,
-			},
-		})
-			.select("name username profilePicture headline")
-			.limit(3);
+		// Get all users excluding current user and already connected users
+		const excludeIds = [
+			req.user._id,
+			...currentUser.connections.map(conn => conn._id)
+		];
 
-		res.json(suggestedUser);
+		const candidateUsers = await User.find({
+			_id: { $nin: excludeIds }
+		}).select("name username profilePicture headline specialization role location skills connections lastActivity");
+
+		// Calculate similarity scores using k-nearest neighbor approach
+		const userScores = candidateUsers.map(candidate => {
+			let score = 0;
+
+			// 1. Role similarity (weight: 3)
+			if (candidate.role === currentUser.role) {
+				score += 3;
+			}
+
+			// 2. Specialization similarity (weight: 4) - for lawyers
+			if (currentUser.specialization && candidate.specialization) {
+				const commonSpecs = currentUser.specialization.filter(spec => 
+					candidate.specialization.includes(spec)
+				);
+				score += commonSpecs.length * 4;
+			}
+
+			// 3. Skills similarity (weight: 2)
+			if (currentUser.skills && candidate.skills) {
+				const commonSkills = currentUser.skills.filter(skill => 
+					candidate.skills.includes(skill)
+				);
+				score += commonSkills.length * 2;
+			}
+
+			// 4. Location similarity (weight: 2)
+			if (currentUser.location && candidate.location && 
+				currentUser.location.toLowerCase() === candidate.location.toLowerCase()) {
+				score += 2;
+			}
+
+			// 5. Mutual connections (weight: 3)
+			if (candidate.connections && currentUser.connections) {
+				const mutualConnections = candidate.connections.filter(conn => 
+					currentUser.connections.some(myConn => myConn._id.toString() === conn.toString())
+				);
+				score += mutualConnections.length * 3;
+			}
+
+			// 6. Activity recency (weight: 1)
+			if (candidate.lastActivity) {
+				const daysSinceActivity = (Date.now() - new Date(candidate.lastActivity)) / (1000 * 60 * 60 * 24);
+				if (daysSinceActivity < 7) score += 1; // Active in last week
+			}
+
+			// 7. Random factor to add variety (weight: 0.5)
+			score += Math.random() * 0.5;
+
+			return {
+				user: candidate,
+				score: score
+			};
+		});
+
+		// Sort by score (descending) and take top 5
+		const topUsers = userScores
+			.sort((a, b) => b.score - a.score)
+			.slice(0, 5)
+			.map(item => item.user);
+
+		res.json(topUsers);
 	} catch (error) {
 		console.error("Error in getSuggestedConnections controller:", error);
 		res.status(500).json({ message: "Server error" });

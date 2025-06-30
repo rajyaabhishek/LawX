@@ -7,9 +7,11 @@ import {
 	Text,
 	Heading,
 	Flex,
-	Button
+	Button,
+	HStack
 } from "@chakra-ui/react";
 import { Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import Post from "../components/Post";
 import PostCreation from "../components/PostCreation";
 import RecommendedUser from "../components/RecommendedUser";
@@ -222,6 +224,60 @@ const HomePage = () => {
 								<RecommendedUser key={user._id} user={user} />
 							))}
 						</VStack>
+						
+						{/* Footer Links */}
+						<Box mt={6} pt={4} borderTop="1px solid" borderColor={borderColor}>
+							<VStack spacing={2} align="center">
+								<HStack spacing={3} wrap="wrap" justify="center">
+									<Text 
+										as={Link} 
+										to="/about" 
+										fontSize="xs" 
+										color={mutedText}
+										_hover={{ color: "blue.500", textDecoration: "underline" }}
+										cursor="pointer"
+									>
+										About
+									</Text>
+									<Text color={mutedText} fontSize="xs">•</Text>
+									<Text 
+										as={Link} 
+										to="/privacy" 
+										fontSize="xs" 
+										color={mutedText}
+										_hover={{ color: "blue.500", textDecoration: "underline" }}
+										cursor="pointer"
+									>
+										Privacy
+									</Text>
+									<Text color={mutedText} fontSize="xs">•</Text>
+									<Text 
+										as={Link} 
+										to="/terms" 
+										fontSize="xs" 
+										color={mutedText}
+										_hover={{ color: "blue.500", textDecoration: "underline" }}
+										cursor="pointer"
+									>
+										Terms
+									</Text>
+									<Text color={mutedText} fontSize="xs">•</Text>
+									<Text 
+										as={Link} 
+										to="/contact" 
+										fontSize="xs" 
+										color={mutedText}
+										_hover={{ color: "blue.500", textDecoration: "underline" }}
+										cursor="pointer"
+									>
+										Contact
+									</Text>
+								</HStack>
+								<Text fontSize="xs" color={mutedText} textAlign="center">
+									© 2025 Earth. All rights reserved.
+								</Text>
+							</VStack>
+						</Box>
 					</Box>
 				</Box>
 			)}

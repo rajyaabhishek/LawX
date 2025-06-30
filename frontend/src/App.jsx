@@ -21,6 +21,10 @@ import BrowseCasesPage from "./pages/BrowseCasesPage";
 import SearchPage from "./pages/SearchPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import Premium from "./pages/Premium";
+import AboutPage from "./pages/AboutPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
+import ContactPage from "./pages/ContactPage";
 import AuthOverlay from "./components/AuthOverlay";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuestModeIndicator from "./components/GuestModeIndicator";
@@ -82,6 +86,10 @@ function App() {
 						<Route path='/premium' element={<Premium />} />
 						<Route path='/premium/success' element={<PaymentSuccessPage />} />
 						<Route path='/payment/return' element={<PaymentSuccessPage />} />
+						<Route path='/about' element={<AboutPage />} />
+						<Route path='/privacy' element={<PrivacyPage />} />
+						<Route path='/terms' element={<TermsPage />} />
+						<Route path='/contact' element={<ContactPage />} />
 						
 						{/* Protected routes - require authentication */}
 						<Route path='/notifications' element={
