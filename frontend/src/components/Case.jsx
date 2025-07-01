@@ -9,39 +9,17 @@ import {
   useColorModeValue,
   useDisclosure,
   Divider,
-  Textarea,
-
   Tooltip,
   HStack,
   VStack,
   Tag,
   TagLabel,
-
   Alert,
   AlertIcon,
-  Stack,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-
-
-
-
-  FormControl,
-  FormLabel,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverArrow,
-  PopoverCloseButton,
-  PopoverHeader,
-  PopoverBody
+  Stack
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRecoilValue } from "recoil";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -53,17 +31,15 @@ import {
   FiUsers,
   FiExternalLink,
   FiCheck,
-  FiTrash2,
-  FiEdit,
   FiSend,
-  FiBriefcase,
-  FiThumbsUp
+  FiBriefcase
 } from "react-icons/fi";
 import userAtom from "../atoms/userAtom";
 import { useAuthContext } from "../context/AuthContext";
 import { axiosInstance } from "../lib/axios";
 import useShowToast from "../hooks/useShowToast";
 import { formatDistanceToNow, format, parseISO } from "date-fns";
+import { formatTimeAgo } from "../utils/dateUtils";
 import CaseApplicants from "./CaseApplicants";
 
 // Format date to a readable format (e.g., "Jan 1, 2023")
@@ -77,23 +53,11 @@ const formatDate = (dateString) => {
   }
 };
 
-const Case = ({ caseData, onUpdate, showApplicants = true }) => {
+const Case = ({ caseData, onUpdate, showApplicants = true, hideLikeButton = false }) => {
   const { 
     isOpen: isApplicantsOpen, 
     onOpen: onApplicantsOpen, 
     onClose: onApplicantsClose 
-  } = useDisclosure();
-  const { 
-    isOpen: isApplyOpen, 
-    onOpen: onApplyOpen, 
-    onClose: onApplyClose 
-  } = useDisclosure();
-  
-  // For delete confirmation
-  const { 
-    isOpen: isDeleteOpen, 
-    onOpen: onDeleteOpen, 
-    onClose: onDeleteClose 
   } = useDisclosure();
   
   const recoilUser = useRecoilValue(userAtom);
@@ -102,12 +66,8 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
   // Use AuthContext user if available, fallback to Recoil user
   const currentUser = authUser || recoilUser;
   const [isApplying, setIsApplying] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [applicationMessage, setApplicationMessage] = useState("");
-  const [isLiking, setIsLiking] = useState(false);
   const showToast = useShowToast();
   const queryClient = useQueryClient();
-  const cancelRef = useRef();
   
   // Return null if caseData is not available
   if (!caseData) {
@@ -143,134 +103,49 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
   const borderColor = useColorModeValue("gray.200", "gray.600");
   const mutedTextColor = useColorModeValue("gray.600", "gray.400");
   const primaryTextColor = useColorModeValue("gray.800", "white");
+  const tooltipBg = useColorModeValue("white", "gray.700");
+  const tooltipColor = useColorModeValue("gray.800", "white");
 
   const isOwner = useMemo(() => {
     return currentUser?._id === user?._id;
   }, [currentUser, caseData.user]);
 
-  const hasApplied = useMemo(() => {
+  const hasAppliedInitial = useMemo(() => {
     if (!applications || !currentUser?._id) return false;
     return applications.some(app => app.user?._id === currentUser._id);
   }, [applications, currentUser]);
-
-  const isLiked = useMemo(() => {
-    if (!caseData.likes || !currentUser?._id) return false;
-    return caseData.likes.some(like => 
-      (typeof like === 'object' ? like._id : like) === currentUser._id
-    );
-  }, [caseData.likes, currentUser]);
-  
-  const likeCount = useMemo(() => {
-    if (!caseData.likes) return 0;
-    return Array.isArray(caseData.likes) ? caseData.likes.length : 0;
-  }, [caseData.likes]);
-  
-  const { mutate: handleLike } = useMutation({
-    mutationFn: async () => {
-      if (!currentUser) {
-        throw new Error('Please sign in to like cases');
-      }
-      const response = await axiosInstance.post(`/cases/${caseData._id}/like`);
-      return response.data;
-    },
-    onMutate: () => {
-      setIsLiking(true);
-    },
-    onSuccess: (data) => {
-      // Invalidate and refetch the cases query to update the UI
-      queryClient.invalidateQueries({ queryKey: ['cases'] });
-      queryClient.invalidateQueries({ queryKey: ['case', caseData._id] });
-      queryClient.invalidateQueries({ queryKey: ['myCases'] });
-      queryClient.invalidateQueries({ queryKey: ['publicCases'] });
-      
-      // Update the local state immediately for a smoother UX
-      if (onUpdate) {
-        onUpdate({
-          ...caseData,
-          likes: data.case.likes,
-          likeCount: data.likeCount
-        });
-      }
-    },
-    onError: (error) => {
-      showToast("Error", error.message || "Failed to update like status", "error");
-    },
-    onSettled: () => {
-      setIsLiking(false);
-    }
-  });
+  const [hasAppliedLocal, setHasAppliedLocal] = useState(hasAppliedInitial);
 
   const handleViewApplicants = useCallback((e) => {
     e.stopPropagation(); // Prevent the card click from opening the main modal
     onApplicantsOpen();
   }, [onApplicantsOpen]);
 
-  const handleDeleteCase = async () => {
-    if (isDeleting || !caseData?._id) return;
-    
-    setIsDeleting(true);
-    try {
-      await axiosInstance.delete(`/cases/${caseData._id}`);
-      
-      showToast("Success", "Case deleted successfully", "success");
-      
-      // Close all modals first
-      onDeleteClose();
-      onApplicantsClose(); // Close applicants modal if open
-      
-      // Update the parent component by removing this case after a small delay
-      // to ensure modals have properly closed
-      setTimeout(() => {
-        if (onUpdate) {
-          onUpdate(null); // Signal to remove this case
-        }
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error deleting case:", error);
-      showToast(
-        "Error", 
-        error.response?.data?.error || "Failed to delete case. Please try again.", 
-        "error"
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-  
-  // Handle delete button click
-  const onDeleteClick = (e) => {
-    e.stopPropagation();
-    onDeleteOpen();
-  };
-
-  const canDelete = useMemo(() => {
-    if (!isOwner) return false;
-    // Check if case has accepted applications
-    const hasAcceptedApplications = applications?.some(app => app.status === 'accepted');
-    return !hasAcceptedApplications;
-  }, [isOwner, applications]);
-
   const handleApplyForCase = async () => {
-    if (isApplying || !applicationMessage.trim() || !caseData?._id) return;
+    if (isApplying || !caseData?._id) return;
     
     setIsApplying(true);
     try {
       const { data } = await axiosInstance.post(`/cases/${caseData._id}/apply`, {
-        message: applicationMessage
+        message: "I'm interested in working on your case."
       });
       
       showToast("Success", "Application submitted successfully", "success");
-      setApplicationMessage("");
-      onApplyClose();
+      setHasAppliedLocal(true); // instant UI update
       
       // Update the case data with the new application
-      if (onUpdate) {
+      if (onUpdate && data.application) {
         onUpdate({
           ...caseData,
-          applications: [...applications, data]
+          applications: [...applications, data.application]
         });
       }
+      
+      // Invalidate queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['cases'] });
+      queryClient.invalidateQueries({ queryKey: ['case', caseData._id] });
+      queryClient.invalidateQueries({ queryKey: ['publicCases'] });
+      
     } catch (error) {
       console.error("Error applying for case:", error);
       showToast(
@@ -299,29 +174,10 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         transition="all 0.2s ease"
         position="relative"
       >
-        {/* Delete button for case owner */}
-        {isOwner && (
-          <Button
-            position="absolute"
-            top={2}
-            right={2}
-            size="sm"
-            variant="ghost"
-            colorScheme="red"
-            onClick={onDeleteClick}
-            p={1}
-            minW="auto"
-            height="auto"
-            isLoading={isDeleting}
-            aria-label="Delete case"
-          >
-            <FiTrash2 size={16} />
-          </Button>
-        )}
         {/* Header section with minimal status indicators */}
         <Flex justify="space-between" align="flex-start" mb={4}>
           <HStack spacing={3}>
-            {hasApplied && (
+            {hasAppliedLocal && (
               <Box 
                 display="flex" 
                 alignItems="center" 
@@ -354,7 +210,12 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
           
           <HStack spacing={3}>
             {showApplicants && (
-              <Tooltip label={`${applicationsCount} ${applicationsCount === 1 ? 'applicant' : 'applicants'}`}>
+              <Tooltip 
+                label={`${applicationsCount} ${applicationsCount === 1 ? 'applicant' : 'applicants'}`}
+                hasArrow
+                bg={tooltipBg}
+                color={tooltipColor}
+              >
                 <Box
                   display="flex"
                   alignItems="center"
@@ -393,7 +254,7 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         {title || "Untitled Case"}
       </Heading>
       
-      {/* Author and time */}
+      {/* Author */}
       <Flex align="center" mb={3}>
         <Avatar 
           size="sm" 
@@ -404,9 +265,6 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         <Box flex={1}>
           <Text fontWeight="medium" fontSize="sm" color={primaryTextColor} noOfLines={1}>
             {user?.name || user?.username || 'Unknown User'}
-          </Text>
-          <Text fontSize="xs" color={mutedTextColor}>
-            {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
           </Text>
         </Box>
       </Flex>
@@ -448,24 +306,15 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         </Stack>
       )}
 
-      {/* Like and Apply Buttons - Bottom Right Corner */}
+      {/* Time ago display - Bottom left */}
+      <Box mt={4} mb={2}>
+        <Text fontSize="xs" color={mutedTextColor}>
+          Posted {formatTimeAgo(createdAt)}
+        </Text>
+      </Box>
+
+      {/* Apply Button - Bottom Right Corner */}
       <Flex position="absolute" bottom={4} right={4} gap={2} alignItems="center">
-        {/* Like Button */}
-        <Button
-          size="sm"
-          variant="ghost"
-          colorScheme={isLiked ? "blue" : "gray"}
-          leftIcon={<FiThumbsUp />}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleLike();
-          }}
-          isLoading={isLiking}
-          disabled={isLiking || !isSignedIn}
-          title={isSignedIn ? "Like this case" : "Sign in to like"}
-        >
-          {likeCount > 0 ? likeCount : ''}
-        </Button>
         {isOwner ? (
           <Button 
             size="sm"
@@ -487,7 +336,7 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
           >
             Login to Apply
           </Button>
-        ) : hasApplied ? (
+        ) : hasAppliedLocal ? (
           <Button 
             size="sm"
             bg="green.100"
@@ -499,46 +348,16 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
             Applied
           </Button>
         ) : (
-          <Popover isOpen={isApplyOpen} onClose={onApplyClose} placement="top-end">
-            <PopoverTrigger>
-              <Button 
-                size="sm"
-                colorScheme="blue"
-                leftIcon={<FiSend />}
-                onClick={onApplyOpen}
-              >
-                Apply
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent w="400px">
-              <PopoverArrow />
-              <PopoverCloseButton />
-              <PopoverHeader fontWeight="semibold">Apply for this Case</PopoverHeader>
-              <PopoverBody>
-                <FormControl>
-                  <FormLabel fontSize="sm">Why are you a good fit for this case?</FormLabel>
-                  <Textarea
-                    placeholder="Write a brief message explaining your experience and why you're interested..."
-                    value={applicationMessage}
-                    onChange={(e) => setApplicationMessage(e.target.value)}
-                    minH="100px"
-                    size="sm"
-                  />
-                </FormControl>
-                <Button 
-                  mt={3}
-                  w="full"
-                  colorScheme="blue"
-                  onClick={handleApplyForCase}
-                  isLoading={isApplying}
-                  isDisabled={!applicationMessage.trim()}
-                  size="sm"
-                >
-                  {isApplying ? "Submitting..." : "Submit Application"}
-                </Button>
-              </PopoverBody>
-            </PopoverContent>
-          </Popover>
+          <Button 
+            size="sm"
+            colorScheme="blue"
+            leftIcon={<FiSend />}
+            onClick={handleApplyForCase}
+            isLoading={isApplying}
+            disabled={isApplying}
+          >
+            Apply
+          </Button>
         )}
       </Flex>
 
@@ -559,39 +378,6 @@ const Case = ({ caseData, onUpdate, showApplicants = true }) => {
         }}
       />
     )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        isOpen={isDeleteOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={onDeleteClose}
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Delete Case
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              Are you sure you want to delete this case? This action cannot be undone.
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onDeleteClose}>
-                Cancel
-              </Button>
-              <Button 
-                colorScheme="red" 
-                onClick={handleDeleteCase} 
-                ml={3}
-                isLoading={isDeleting}
-              >
-                Delete
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
     </>
   );
 };

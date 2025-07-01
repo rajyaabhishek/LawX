@@ -667,6 +667,7 @@ const CasesPage = () => {
                     key={caseItem._id} 
                     caseData={caseItem} 
                     showApplicants={true}
+                    hideLikeButton={true}
                     onUpdate={(updatedCase) => {
                       try {
                         if (updatedCase === null) {

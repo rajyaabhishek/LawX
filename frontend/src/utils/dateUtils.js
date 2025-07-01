@@ -1,4 +1,4 @@
-import { format, parseISO, isValid } from "date-fns";
+import { format, parseISO, isValid, formatDistanceToNow } from "date-fns";
 
 export const formatDate = (dateString) => {
 	const date = parseISO(dateString);
@@ -16,4 +16,17 @@ export const formatMessageTimestamp = (dateString) => {
 	hours = hours % 12;
 	hours = hours ? hours : 12; // the hour '0' should be '12'
 	return `${hours}:${minutes} ${ampm}`;
+};
+
+export const formatTimeAgo = (dateString) => {
+	try {
+		const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+		if (isNaN(date.getTime())) {
+			return "Time not available";
+		}
+		return formatDistanceToNow(date, { addSuffix: true });
+	} catch (error) {
+		console.error('Error formatting time ago:', error);
+		return "Time not available";
+	}
 };

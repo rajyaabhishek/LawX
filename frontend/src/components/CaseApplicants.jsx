@@ -19,13 +19,14 @@ import {
   ModalBody,
   useDisclosure,
   ModalFooter,
-  Tooltip
+  Tooltip,
+  Flex
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { axiosInstance } from "../lib/axios";
 import { formatDistanceToNow } from "date-fns";
-import { FiMail, FiUser, FiClock, FiMessageSquare } from "react-icons/fi";
+import { FiMail, FiUser, FiClock } from "react-icons/fi";
 import useShowToast from "../hooks/useShowToast";
 
 const statusColors = {
@@ -37,6 +38,9 @@ const statusColors = {
 const ApplicantCard = ({ applicant, onStatusChange }) => {
   const bgColor = useColorModeValue("white", "gray.700");
   const borderColor = useColorModeValue("gray.200", "gray.600");
+  const cardBg = useColorModeValue("white", "gray.700");
+  const mutedTextColor = useColorModeValue("gray.600", "gray.400");
+  const primaryTextColor = useColorModeValue("gray.800", "white");
   const navigate = useNavigate();
 
   const handleViewProfile = () => {
@@ -45,87 +49,103 @@ const ApplicantCard = ({ applicant, onStatusChange }) => {
 
   return (
     <Box
-      p={5}
-      borderWidth="1px"
+      p={6}
       borderRadius="lg"
-      bg={bgColor}
+      bg={cardBg}
+      border="1px"
       borderColor={borderColor}
-      shadow="sm"
-      _hover={{ shadow: "md" }}
-      transition="all 0.2s"
+      _hover={{ 
+        borderColor: "gray.300",
+        shadow: "sm"
+      }}
+      transition="all 0.2s ease"
     >
-      <VStack align="stretch" spacing={4}>
-        <HStack spacing={4} align="flex-start">
+      <Flex justify="space-between" align="flex-start" mb={4}>
+        <HStack spacing={4} flex={1}>
           <Avatar
-            size="lg"
+            size="md"
             name={applicant.user.name || applicant.user.username}
             src={applicant.user.profilePicture}
           />
-          <VStack align="flex-start" spacing={2} flex={1} minW={0}>
-            <HStack justify="space-between" w="full" align="center">
-              <Text fontWeight="bold" fontSize="lg" noOfLines={1}>
-                {applicant.user.name || applicant.user.username}
-              </Text>
-              <Badge colorScheme={statusColors[applicant.status]} fontSize="sm" px={3} py={1}>
-                {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
-              </Badge>
-            </HStack>
-            
-            <HStack color="gray.500" fontSize="sm">
-              <FiClock size={14} />
-              <Text>Applied {formatDistanceToNow(new Date(applicant.appliedAt), { addSuffix: true })}</Text>
+          <VStack align="flex-start" spacing={1} flex={1} minW={0}>
+            <Text fontWeight="bold" fontSize="lg" color={primaryTextColor} noOfLines={1}>
+              {applicant.user.name || applicant.user.username}
+            </Text>
+            <HStack color={mutedTextColor} fontSize="sm" spacing={4}>
+              <HStack spacing={1}>
+                <FiClock size={14} />
+                <Text>Applied {formatDistanceToNow(new Date(applicant.appliedAt), { addSuffix: true })}</Text>
+              </HStack>
             </HStack>
           </VStack>
         </HStack>
         
-        {applicant.message && (
-          <Box p={3} bg={useColorModeValue("gray.50", "gray.600")} borderRadius="md">
-            <HStack color="gray.600" fontSize="sm" mb={1}>
-              <FiMessageSquare size={14} />
-              <Text fontWeight="semibold">Application Message:</Text>
-            </HStack>
-            <Text fontSize="sm" color="gray.700" _dark={{ color: "gray.300" }}>
-              {applicant.message}
-            </Text>
-          </Box>
-        )}
+        <Badge 
+          variant="outline"
+          colorScheme={applicant.status === 'pending' ? undefined : statusColors[applicant.status]}
+          fontSize="sm" 
+          px={3} 
+          py={1}
+          borderRadius="md"
+          borderColor={applicant.status === 'pending' ? "orange.400" : undefined}
+          color={applicant.status === 'pending' ? "orange.600" : undefined}
+          _dark={{
+            borderColor: applicant.status === 'pending' ? "orange.300" : undefined,
+            color: applicant.status === 'pending' ? "orange.300" : undefined
+          }}
+        >
+          {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
+        </Badge>
+      </Flex>
+      
+      <Divider mb={4} />
+      
+      <Flex gap={3} justify="flex-end">
+        <Button
+          size="sm"
+          colorScheme="blue"
+          variant="outline"
+          leftIcon={<FiUser />}
+          onClick={handleViewProfile}
+        >
+          View Profile
+        </Button>
         
-        <HStack justify="space-between" spacing={3} pt={2}>
-          <Button
-            size="md"
-            colorScheme="blue"
-            variant="outline"
-            leftIcon={<FiUser />}
-            onClick={handleViewProfile}
-            flex={1}
-          >
-            View Profile
-          </Button>
-          
-          {applicant.status === 'pending' && (
-            <HStack spacing={2} flex={1}>
-              <Button
-                size="md"
-                colorScheme="green"
-                variant="solid"
-                onClick={() => onStatusChange(applicant._id, 'accepted')}
-                flex={1}
-              >
-                Accept
-              </Button>
-              <Button
-                size="md"
-                colorScheme="red"
-                variant="solid"
-                onClick={() => onStatusChange(applicant._id, 'rejected')}
-                flex={1}
-              >
-                Reject
-              </Button>
-            </HStack>
-          )}
-        </HStack>
-      </VStack>
+        {applicant.status === 'pending' && (
+          <HStack spacing={2}>
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor="green.400"
+              color="green.600"
+              _hover={{ bg: "green.50", borderColor: "green.500" }}
+              _dark={{ 
+                color: "green.300", 
+                borderColor: "green.300",
+                _hover: { bg: "green.900", borderColor: "green.200" }
+              }}
+              onClick={() => onStatusChange(applicant._id, 'accepted')}
+            >
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor="red.400"
+              color="red.600"
+              _hover={{ bg: "red.50", borderColor: "red.500" }}
+              _dark={{ 
+                color: "red.300", 
+                borderColor: "red.300",
+                _hover: { bg: "red.900", borderColor: "red.200" }
+              }}
+              onClick={() => onStatusChange(applicant._id, 'rejected')}
+            >
+              Reject
+            </Button>
+          </HStack>
+        )}
+      </Flex>
     </Box>
   );
 };
@@ -190,7 +210,7 @@ const CaseApplicants = ({ caseId, isOpen, onClose, onStatusUpdate }) => {
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Case Applicants</ModalHeader>

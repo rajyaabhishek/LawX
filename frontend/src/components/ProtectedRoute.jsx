@@ -140,12 +140,7 @@ const ProtectedRoute = ({ children, requirePermission, requireRole, fallbackComp
       <VStack spacing={8} maxW="lg" mx="auto" p={8} bg={cardBg} borderRadius="xl" shadow="lg">
         <Icon as={FaLock} boxSize={16} color="blue.500" />
         
-        <VStack spacing={4} textAlign="center">
-          <Heading size="lg">Authentication Required</Heading>
-          <Text color="gray.600">
-            Please sign in to access this feature. Join our community of legal professionals and access exclusive content.
-          </Text>
-        </VStack>
+      
 
         <VStack spacing={3} w="full">
           <Button 
@@ -159,9 +154,7 @@ const ProtectedRoute = ({ children, requirePermission, requireRole, fallbackComp
           >
             Sign In
           </Button>
-          <Button variant="outline" onClick={() => window.history.back()}>
-            Go Back
-          </Button>
+          
         </VStack>
 
         <HStack spacing={4} fontSize="sm" color="gray.500">

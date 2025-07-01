@@ -113,7 +113,7 @@ function App() {
 							</ProtectedRoute>
 						} />
 						<Route path='/my-applications' element={
-							<ProtectedRoute requirePermission="APPLY_TO_CASE">
+							<ProtectedRoute>
 								<MyApplicationsPage />
 							</ProtectedRoute>
 						} />

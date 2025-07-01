@@ -8,8 +8,7 @@ import {
   HStack,
   Spinner,
   Flex,
-  Button,
-  Badge
+  Button
 } from "@chakra-ui/react";
 import { FiUserCheck } from "react-icons/fi";
 import { useRecoilValue } from "recoil";
@@ -18,7 +17,7 @@ import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import { axiosInstance } from "../lib/axios";
 import { Link } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+import Application from "../components/Application";
 
 const MyApplicationsPage = () => {
   const currentUser = useRecoilValue(userAtom);
@@ -31,14 +30,6 @@ const MyApplicationsPage = () => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const textColor = useColorModeValue("gray.800", "white");
   const mutedText = useColorModeValue("gray.600", "gray.400");
-
-  const statusConfig = {
-    pending: { color: 'yellow', label: 'Pending' },
-    accepted: { color: 'green', label: 'Accepted' },
-    rejected: { color: 'red', label: 'Rejected' },
-    completed: { color: 'blue', label: 'Completed' },
-    cancelled: { color: 'gray', label: 'Cancelled' }
-  };
 
   const fetchMyApplications = useCallback(async () => {
     try {
@@ -92,7 +83,7 @@ const MyApplicationsPage = () => {
             </Text>
             <Button 
               as={Link}
-              to="/cases"
+              to="/browse-cases"
               colorScheme="blue" 
               variant="outline"
               size="lg"
@@ -102,74 +93,46 @@ const MyApplicationsPage = () => {
           </Box>
         ) : (
           <VStack spacing={3} align="stretch">
-            <Text color={mutedText} mb={4}>
-              {myApplications.length} application{myApplications.length !== 1 ? 's' : ''} found
-            </Text>
+            <HStack justify="space-between" mb={4}>
+              <Text color={mutedText}>
+                {myApplications.length} application{myApplications.length !== 1 ? 's' : ''} found
+              </Text>
+              <Button 
+                as={Link}
+                to="/browse-cases"
+                colorScheme="blue" 
+                variant="outline"
+                size="sm"
+              >
+                Browse More Cases
+              </Button>
+            </HStack>
             
             {myApplications.map((application) => (
-              <Box
-                key={application._id}
-                p={4}
-                bg={cardBg}
-                borderRadius="xl"
-                borderWidth="1px"
-                borderColor={borderColor}
-                shadow="sm"
-                _hover={{ shadow: "md" }}
-                transition="all 0.2s"
-              >
-                <HStack justify="space-between" mb={2}>
-                  <Heading size="md" color="blue.600">
-                    {application.case.title}
-                  </Heading>
-                  <Badge 
-                    colorScheme={statusConfig[application.status?.toLowerCase()]?.color || 'gray'}
-                    variant="subtle" 
-                    px={3} 
-                    py={1} 
-                    borderRadius="full"
-                    fontSize="sm"
-                  >
-                    {statusConfig[application.status?.toLowerCase()]?.label || application.status}
-                  </Badge>
-                </HStack>
-                
-                <Text color={mutedText} mb={3} noOfLines={3}>
-                  {application.case.description}
-                </Text>
-                
-                <VStack align="start" spacing={2}>
-                  <HStack spacing={4} fontSize="sm" color={mutedText}>
-                    <Text>Applied: {formatDistanceToNow(new Date(application.appliedAt))} ago</Text>
-                    <Text>•</Text>
-                    <Text>Budget: {application.case.budget?.currency} {application.case.budget?.amount?.toLocaleString()}</Text>
-                  </HStack>
-                  
-                  {application.case.caseType && (
-                    <HStack spacing={4} fontSize="sm" color={mutedText}>
-                      <Text>Case Type: {application.case.caseType}</Text>
-                      {application.case.location && (
-                        <>
-                          <Text>•</Text>
-                          <Text>Location: {application.case.location}</Text>
-                        </>
-                      )}
-                    </HStack>
-                  )}
-                </VStack>
-
-                {application.status?.toLowerCase() === 'pending' && (
-                  <Text fontSize="sm" color="yellow.600" mt={3} fontStyle="italic">
-                    Waiting for client response...
-                  </Text>
-                )}
-                
-                {application.status?.toLowerCase() === 'accepted' && (
-                  <Text fontSize="sm" color="green.600" mt={3} fontWeight="semibold">
-                    🎉 Congratulations! Your application was accepted.
-                  </Text>
-                )}
-              </Box>
+              <Application 
+                key={application._id} 
+                applicationData={application} 
+                onUpdate={(updatedApplication) => {
+                  try {
+                    if (updatedApplication === null) {
+                      // Application was deleted, remove it from the list
+                      setMyApplications(prev => 
+                        prev.filter(app => app._id !== application._id)
+                      );
+                    } else {
+                      // Application was updated, update it in the list
+                      setMyApplications(prev => 
+                        prev.map(app => app._id === updatedApplication._id ? updatedApplication : app)
+                      );
+                      fetchMyApplications();
+                    }
+                  } catch (error) {
+                    console.error('Error updating application list:', error);
+                    // Fallback: refetch all applications
+                    fetchMyApplications();
+                  }
+                }}
+              />
             ))}
           </VStack>
         )}

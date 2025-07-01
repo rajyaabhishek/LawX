@@ -11,7 +11,7 @@ import {
 	HStack
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { Home, UserPlus, Bell, Briefcase, FileText, UserCheck, Plus, Search, Crown, Lock } from "lucide-react";
+import { Home, UserPlus, Bell, Briefcase, FileText, UserCheck, Plus, Search } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 import usePremium from "../hooks/usePremium";
 import { useAuthContext } from "../context/AuthContext";
@@ -49,13 +49,13 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 	const hoverBg = useColorModeValue("blue.50", "blue.900");
 	const linkColor = useColorModeValue("gray.700", "gray.200");
 
-	const NavItem = ({ to, icon, children, isPremiumFeature = false, isDisabled = false }) => (
+	const NavItem = ({ to, icon, children, isDisabled = false, centered = false }) => (
 		<Box
 			as={isDisabled ? 'div' : Link}
 			to={!isDisabled ? to : undefined}
 			display="flex"
 			alignItems="center"
-			justifyContent="space-between"
+			justifyContent={centered ? "center" : "space-between"}
 			py={3}
 			px={4}
 			borderRadius="md"
@@ -68,20 +68,13 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 			cursor={isDisabled ? "not-allowed" : "pointer"}
 			opacity={isDisabled ? 0.6 : 1}
 			onClick={!isDisabled && onItemClick ? onItemClick : undefined}
+			w={centered ? "fit-content" : "100%"}
+			mx={centered ? "auto" : 0}
 		>
 			<HStack spacing={3}>
 				<Icon as={icon} boxSize={5} />
 				<Text fontSize={{ base: "md", md: "sm" }} fontWeight="medium">{children}</Text>
 			</HStack>
-			{isPremiumFeature && (
-				userIsPremium ? (
-					<Badge colorScheme="gold" size="sm">
-						<Icon as={Crown} boxSize={3} />
-					</Badge>
-				) : (
-					<Icon as={Lock} boxSize={3} />
-				)
-			)}
 		</Box>
 	);
 
@@ -89,8 +82,8 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 		<NavItem 
 			to={to} 
 			icon={icon} 
-			isPremiumFeature={true}
 			isDisabled={!userIsPremium}
+		
 		>
 			{children}
 		</NavItem>
@@ -118,15 +111,18 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 					<NavItem to="/network" icon={UserPlus}>
 						Network
 					</NavItem>
+					{/* My Applications (available to all authenticated users) */}
+					<NavItem to="/my-applications" icon={UserCheck}>
+						My Applications
+					</NavItem>
 					{/* Connections nav item removed as feature is deprecated. Users can access connections via Network page. */}
 				
 
 					{/* Premium Features Section */}
 					{userIsPremium && (
 						<>
-							<Box pt={3} pb={1}>
-								<HStack>
-									<Icon as={Crown} color="gold" boxSize={4} />
+							<Box pt={3} pb={1} textAlign="center">
+								<HStack justify="center">
 									<Text fontSize="sm" fontWeight="bold" color="gold">
 										Premium Features
 									</Text>
@@ -134,15 +130,14 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 								<Divider mt={1} />
 							</Box>
 							
-							<PremiumNavItem to="/create-case" icon={Plus}>
-								Post a Case
-							</PremiumNavItem>
-							<PremiumNavItem to="/my-cases" icon={FileText}>
-								My Cases
-							</PremiumNavItem>
-							<PremiumNavItem to="/my-applications" icon={UserCheck}>
-								My Applications
-							</PremiumNavItem>
+							<VStack spacing={2} align="center">
+								<PremiumNavItem to="/create-case" icon={Plus}>
+									Post a Case
+								</PremiumNavItem>
+								<PremiumNavItem to="/my-cases" icon={FileText}>
+									My Cases
+								</PremiumNavItem>
+							</VStack>
 						</>
 					)}
 
@@ -152,9 +147,8 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 					{/* Show locked premium features for non-premium users */}
 					{!userIsPremium && (
 						<>
-							<Box pt={3} pb={1}>
-								<HStack>
-									<Icon as={Lock} color={mutedText} boxSize={4} />
+							<Box pt={3} pb={1} textAlign="center">
+								<HStack justify="center">
 									<Text fontSize="sm" fontWeight="bold" color={mutedText}>
 										Premium Features
 									</Text>
@@ -162,15 +156,14 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 								<Divider mt={1} />
 							</Box>
 							
-							<PremiumNavItem to="/premium" icon={Plus}>
-								Post a Case
-							</PremiumNavItem>
-							<PremiumNavItem to="/premium" icon={FileText}>
-								My Cases
-							</PremiumNavItem>
-							<PremiumNavItem to="/premium" icon={UserCheck}>
-								My Applications
-							</PremiumNavItem>
+							<VStack spacing={2} align="center">
+								<PremiumNavItem to="/premium" icon={Plus}>
+									Post a Case
+								</PremiumNavItem>
+								<PremiumNavItem to="/premium" icon={FileText}>
+									My Cases
+								</PremiumNavItem>
+							</VStack>
 							
 							
 						</>

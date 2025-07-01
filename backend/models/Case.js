@@ -65,6 +65,12 @@ const caseSchema = new mongoose.Schema({
       message: 'Deadline must be in the future'
     }
   },
+  // Auto-expiry date - cases will be automatically deleted after 2 months
+  expiryDate: {
+    type: Date,
+    default: () => new Date(Date.now() + 2 * 30 * 24 * 60 * 60 * 1000), // 2 months from now
+    index: { expireAfterSeconds: 0 } // MongoDB TTL index for automatic deletion
+  },
   isRemote: { 
     type: Boolean, 
     default: false 
@@ -102,10 +108,17 @@ caseSchema.index({
   'caseType': 'text'
 });
 
-// TTL index to automatically remove expired cases once the deadline passes
-// The document will be deleted as soon as the stored `deadline` date is reached.
-// MongoDB's background TTL monitor runs approximately every 60 seconds.
-caseSchema.index({ deadline: 1 }, { expireAfterSeconds: 0 });
+// Create TTL index for automatic deletion after 2 months
+caseSchema.index({ expiryDate: 1 }, { expireAfterSeconds: 0 });
+
+// Auto-update expiry date before saving
+caseSchema.pre('save', function(next) {
+  // Only set expiry date if it's a new document and no expiry date is set
+  if (this.isNew && !this.expiryDate) {
+    this.expiryDate = new Date(Date.now() + 2 * 30 * 24 * 60 * 60 * 1000); // 2 months from now
+  }
+  next();
+});
 
 // Pre-save hook to create slug
 caseSchema.pre('save', function(next) {

@@ -95,13 +95,8 @@ router.delete("/:caseId", async (req, res) => {
       });
     }
     
-    // Check if case has accepted applications
-    const hasAcceptedApplications = caseDoc.applications.some(app => app.status === 'accepted');
-    if (hasAcceptedApplications) {
-      return res.status(400).json({ 
-        error: 'Cannot delete case with accepted applications' 
-      });
-    }
+    // Allow deletion even with applicants (as requested by user)
+    // No longer checking for accepted applications
     
     // Delete the case
     await Case.findByIdAndDelete(caseId);

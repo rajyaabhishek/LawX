@@ -35,16 +35,11 @@ function UserCard({ user, isConnection, compact = false }) {
 		return '';
 	};
 
-	const handleContact = () => {
-		// Navigate to messages page with this user
-		navigate(`/messages?user=${user._id}`);
-	};
-
-	// Fetch connection status when applicable
+	// Fetch connection status for all users (not just non-case-tag users)
 	const { data: connectionStatus } = useQuery({
 		queryKey: ["connectionStatus", user._id],
 		queryFn: () => axiosInstance.get(`/connections/status/${user._id}`),
-		enabled: !isConnection && !user.caseTag,
+		enabled: !isConnection, // Only fetch if not already connected
 	});
 
 	const { mutate: sendConnectionRequest } = useMutation({
@@ -66,7 +61,8 @@ function UserCard({ user, isConnection, compact = false }) {
 	});
 
 	const renderActionButton = () => {
-		if (isConnection && !user.caseTag) {
+		// If already a connection, show connected state
+		if (isConnection) {
 			return (
 				<button className='bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs cursor-not-allowed flex items-center gap-1 border border-gray-300'>
 					<UserCheck size={12} />
@@ -75,19 +71,7 @@ function UserCard({ user, isConnection, compact = false }) {
 			);
 		}
 
-		if (user.caseTag) {
-			return (
-				<button 
-					onClick={handleContact}
-					className='bg-blue-400 text-white px-2 py-1 rounded hover:bg-blue-500 transition-colors flex items-center gap-1 text-xs'
-				>
-					<MessageCircle size={12} />
-					Contact
-				</button>
-			);
-		}
-
-		// Show status-based button for suggestions/search results
+		// Show status-based button for all other users
 		const status = connectionStatus?.data?.status;
 		switch (status) {
 			case "pending":

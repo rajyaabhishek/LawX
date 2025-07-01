@@ -271,21 +271,7 @@ const Navbar = ({ onMenuClick, isSidebarOpen, isChatPage = false }) => {
 										onClick={toggleChat}
 									/>
 
-									{/* Premium Badge - Hide on very small screens */}
-									{user?.publicMetadata?.isPremium && (
-										<Badge 
-											colorScheme="yellow" 
-											variant="solid"
-											fontSize="xs"
-											px={2}
-											py={1}
-											borderRadius="full"
-											display={{ base: "none", sm: "flex" }}
-										>
-											<Icon as={Crown} boxSize={3} mr={1} />
-											Premium
-										</Badge>
-									)}
+									{/* Premium Badge - Removed as requested (golden ring around profile shows premium status instead) */}
 
 									{/* Premium Upgrade Button - Responsive */}
 									{!user?.publicMetadata?.isPremium && !isChatPage && (
@@ -318,7 +304,11 @@ const Navbar = ({ onMenuClick, isSidebarOpen, isChatPage = false }) => {
 									<UserButton 
 										appearance={{
 											elements: {
-												avatarBox: `${showMobileMenu ? 'w-7 h-7' : 'w-8 h-8'} shadow-md border-2 ${isDark ? "border-gray-600" : "border-white"}`,
+												avatarBox: `${showMobileMenu ? 'w-7 h-7' : 'w-8 h-8'} shadow-md border-2 ${
+													user?.publicMetadata?.isPremium 
+														? "border-yellow-500 shadow-yellow-100" 
+														: isDark ? "border-gray-600" : "border-white"	
+												}`,
 												userButtonPopoverCard: `shadow-xl border ${isDark ? "border-gray-700 bg-gray-800" : "border-gray-100 bg-white"}`,
 												userButtonPopoverActionButton: `${isDark ? "hover:bg-gray-700" : "hover:bg-gray-50"} transition-colors`,
 												userButtonPopoverActionButtonText: `${isDark ? "text-gray-200" : "text-gray-700"} font-medium`,

@@ -101,45 +101,31 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 	}, [isConnected, connectionStatus]);
 
 	const renderConnectionButton = () => {
-		const baseClass = "text-white py-2 px-4 rounded-full transition duration-300 flex items-center justify-center";
+		const baseClass = "px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-1.5 border";
 		switch (connectionStatusValue) {
 			case "connected":
 				return (
-					<div className='flex gap-2 justify-center'>
-						<div className={`${baseClass} bg-gray-100 text-gray-700 border border-gray-300`}>
-							<UserCheck size={20} className='mr-2' />
-							Connected
-						</div>
-						<button
-							className={`${baseClass} bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-sm`}
-							onClick={() => removeConnection(userData._id)}
-						>
-							<X size={20} className='mr-2' />
-							Remove Connection
-						</button>
-					</div>
-				);
-
-			case "pending":
-				return (
-					<button className={`${baseClass} bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-gray-400`}>
-						<Clock size={20} className='mr-2' />
-						Pending
+					<button
+						className={`${baseClass} bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100 hover:border-gray-400`}
+						onClick={() => removeConnection(userData._id)}
+					>
+						<UserCheck size={16} />
+						Connected
 					</button>
 				);
 
 			case "received":
 				return (
-					<div className='flex gap-2 justify-center'>
+					<div className='flex gap-1.5'>
 						<button
 							onClick={() => acceptRequest(connectionStatus.data.requestId)}
-							className={`${baseClass} bg-gray-800 text-white border border-gray-800 hover:bg-gray-700 hover:border-gray-700`}
+							className={`${baseClass} bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400`}
 						>
 							Accept
 						</button>
 						<button
 							onClick={() => rejectRequest(connectionStatus.data.requestId)}
-							className={`${baseClass} bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400`}
+							className={`${baseClass} bg-white text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400`}
 						>
 							Reject
 						</button>
@@ -149,9 +135,9 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 				return (
 					<button
 						onClick={() => sendConnectionRequest(userData._id)}
-						className='px-8 py-3 bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2'
+						className={`${baseClass} bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400`}
 					>
-						<UserPlus size={20} />
+						<UserPlus size={16} />
 						Connect
 					</button>
 				);
@@ -256,7 +242,7 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 				<div className='text-center space-y-2'>
 					{/* Name and Status Badges */}
 					<div className='space-y-2'>
-						<div className='flex justify-center items-center gap-2 flex-wrap'>
+						<div className='flex justify-center items-center gap-3 flex-wrap'>
 							{isEditing ? (
 								<input
 									type='text'
@@ -298,20 +284,16 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 						</div>
 					</div>
 
-					{/* Username */}
-					{(isEditing || userData.username) && (
+					{/* Username - Only shown when editing own profile */}
+					{isEditing && isOwnProfile && (
 						<div className='space-y-0.5'>
-							{isEditing ? (
-								<input
-									type='text'
-									value={editedData.username ?? userData.username}
-									onChange={(e) => setEditedData({ ...editedData, username: e.target.value })}
-									className='text-lg text-gray-600 text-center w-full max-w-sm mx-auto border-0 border-b border-gray-300 focus:border-gray-500 outline-none bg-transparent px-3 py-2'
-									placeholder='Username (e.g., john_lawyer)'
-								/>
-							) : (
-								<p className='text-lg text-gray-600 font-medium'>@{userData.username}</p>
-							)}
+							<input
+								type='text'
+								value={editedData.username ?? userData.username}
+								onChange={(e) => setEditedData({ ...editedData, username: e.target.value })}
+								className='text-lg text-gray-600 text-center w-full max-w-sm mx-auto border-0 border-b border-gray-300 focus:border-gray-500 outline-none bg-transparent px-3 py-2'
+								placeholder='Username (e.g., john_lawyer)'
+							/>
 						</div>
 					)}
 
@@ -329,6 +311,13 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 							<p className='text-lg text-gray-700 font-medium max-w-2xl mx-auto'>{userData.headline}</p>
 						)}
 					</div>
+
+					{/* Connection Button - positioned below headline */}
+					{!isOwnProfile && !isEditing && (
+						<div className='flex justify-center mt-2'>
+							{renderConnectionButton()}
+						</div>
+					)}
 
 					{/* Location */}
 					<div className='flex justify-center items-center gap-1 text-gray-600'>
@@ -367,32 +356,28 @@ const ProfileHeader = ({ userData, onSave, isOwnProfile }) => {
 					)}
 				</div>
 
-				{/* Action Buttons (Save/Cancel or Connection) */}
+				{/* Action Buttons (Save/Cancel for own profile only) */}
 				<div className='mt-4 flex justify-center'>
-					{isOwnProfile ? (
-						isEditing ? (
-							<div className="flex gap-3">
-								<button
-									className='px-8 py-3 bg-gray-300 hover:bg-gray-400 font-medium rounded-lg transition-all duration-200'
-									onClick={handleSave}
-									style={{ color: '#1f2937' }}
-								>
-									Save Changes
-								</button>
-								<button
-									className='px-6 py-3 bg-gray-200 hover:bg-gray-300 font-medium rounded-lg transition-all duration-200'
-									onClick={() => {
-										setIsEditing(false);
-										setEditedData({});
-									}}
-									style={{ color: '#374151' }}
-								>
-									Cancel
-								</button>
-							</div>
-						) : null
-					) : (
-						<div className='flex justify-center'>{renderConnectionButton()}</div>
+					{isOwnProfile && isEditing && (
+						<div className="flex gap-3">
+							<button
+								className='px-8 py-3 bg-gray-300 hover:bg-gray-400 font-medium rounded-lg transition-all duration-200'
+								onClick={handleSave}
+								style={{ color: '#1f2937' }}
+							>
+								Save Changes
+							</button>
+							<button
+								className='px-6 py-3 bg-gray-200 hover:bg-gray-300 font-medium rounded-lg transition-all duration-200'
+								onClick={() => {
+									setIsEditing(false);
+									setEditedData({});
+								}}
+								style={{ color: '#374151' }}
+							>
+								Cancel
+							</button>
+						</div>
 					)}
 				</div>
 			</div>

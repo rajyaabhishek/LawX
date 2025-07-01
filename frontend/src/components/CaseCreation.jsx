@@ -37,9 +37,6 @@ import {
   FiClock, 
   FiDollarSign, 
   FiAlertTriangle,
-  FiPlus,
-  FiX,
-  FiCalendar,
   FiBriefcase
 } from "react-icons/fi";
 
@@ -49,9 +46,7 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [caseType, setCaseType] = useState("");
-  const [expertise, setExpertise] = useState([]);
   const [location, setLocation] = useState("");
-  const [deadline, setDeadline] = useState("");
   const [budget, setBudget] = useState({
     amount: "",
     currency: "USD",
@@ -59,26 +54,15 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
   });
   const [urgency, setUrgency] = useState("Medium");
   const [isRemote, setIsRemote] = useState(false);
-  const [expertiseInput, setExpertiseInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const showToast = useShowToast();
   const bgColor = useColorModeValue("white", "gray.dark");
 
-  const handleAddExpertise = (e) => {
-    e.preventDefault();
-    if (expertiseInput.trim() && !expertise.includes(expertiseInput.trim())) {
-      setExpertise([...expertise, expertiseInput.trim()]);
-      setExpertiseInput("");
-    }
-  };
 
-  const handleRemoveExpertise = (item) => {
-    setExpertise(expertise.filter(e => e !== item));
-  };
 
   const handleCaseSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !description || !caseType || expertise.length === 0 || !location) {
+    if (!title || !description || !caseType || !location) {
       showToast("Error", "Please fill in all required fields", "error");
       return;
     }
@@ -94,7 +78,7 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
         title,
         description,
         caseType,
-        expertise,
+        expertise: [caseType], // Use case type as default expertise
         location,
         budget: {
           amount: parseFloat(budget.amount),
@@ -105,10 +89,7 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
         isRemote
       };
 
-      // Add deadline if provided
-      if (deadline) {
-        payload.deadline = new Date(deadline).toISOString();
-      }
+
 
       const { data } = await axiosInstance.post("/cases", payload);
 
@@ -118,9 +99,7 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
       setTitle("");
       setDescription("");
       setCaseType("");
-      setExpertise([]);
       setLocation("");
-      setDeadline("");
       setBudget({
         amount: "",
         currency: "USD",
@@ -251,13 +230,27 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
                   />
                 
                 </FormControl>
+
+                {/* Location Section */}
+                <FormControl isRequired>
+                  <FormLabel display="flex" alignItems="center" gap={2}>
+                    <Icon as={FiMapPin} size={16} />
+                    Location
+                  </FormLabel>
+                  <Input 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., New York, NY or Remote"
+                    size="lg"
+                    borderRadius="lg"
+                    _focus={{ borderColor: "blue.400", shadow: "0 0 0 1px blue.400" }}
+                  />
+                
+                </FormControl>
+
+
               </VStack>
             </Box>
-
-
-
-            
-            
 
             {/* Budget Section */}
             <Box>
@@ -269,9 +262,7 @@ const CaseCreation = ({ onSuccess, onClose, isModal = true }) => {
                 </FormLabel>
                 <HStack spacing={3}>
                   <InputGroup size="lg" flex={2}>
-                    <InputLeftElement>
-                      <Icon as={FiDollarSign} color="gray.400" />
-                    </InputLeftElement>
+                 
                     <Input 
                       type="number"
                       value={budget.amount}

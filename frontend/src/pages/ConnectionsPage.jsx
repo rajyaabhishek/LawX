@@ -41,11 +41,6 @@ const ConnectionsPage = () => {
 		);
 	}, [connections?.data, searchTerm]);
 
-	// Separate connections by type
-	const regularConnections = filteredConnections.filter(conn => !conn.caseTag);
-	const caseApplicants = filteredConnections.filter(conn => conn.caseTag?.type === 'case_applicant');
-	const casePosters = filteredConnections.filter(conn => conn.caseTag?.type === 'case_poster');
-
 	// Theme colors
 	const bgColor = useColorModeValue("gray.50", "gray.900");
 	const cardBg = useColorModeValue("white", "gray.800");
@@ -101,65 +96,21 @@ const ConnectionsPage = () => {
 					</Box>
 				)}
 
-				{/* Regular Connections */}
-				{regularConnections.length > 0 && (
+				{/* Connections */}
+				{filteredConnections.length > 0 && (
 					<Box mb={6}>
 						<HStack mb={4}>
 							<Heading size="md" color={textColor}>My Connections</Heading>
 							<Badge colorScheme="blue">
-								{regularConnections.length}
+								{filteredConnections.length}
 							</Badge>
 						</HStack>
 						<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
-							{regularConnections.map((connection) => (
+							{filteredConnections.map((connection) => (
 								<UserCard 
 									key={connection._id} 
 									user={connection} 
 									isConnection={true} 
-									compact={true}
-								/>
-							))}
-						</Grid>
-					</Box>
-				)}
-
-				{/* Case Applicants */}
-				{caseApplicants.length > 0 && (
-					<Box mb={6}>
-						<HStack mb={4}>
-							<Heading size="md" color={textColor}>Case Applicants</Heading>
-							<Badge colorScheme="blue">
-								{caseApplicants.length}
-							</Badge>
-						</HStack>
-						<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
-							{caseApplicants.map((connection) => (
-								<UserCard 
-									key={`applicant-${connection._id}`} 
-									user={connection} 
-									isConnection={false} 
-									compact={true}
-								/>
-							))}
-						</Grid>
-					</Box>
-				)}
-
-				{/* Case Posters */}
-				{casePosters.length > 0 && (
-					<Box mb={6}>
-						<HStack mb={4}>
-							<Heading size="md" color={textColor}>Case Contacts</Heading>
-							<Badge colorScheme="yellow">
-								{casePosters.length}
-							</Badge>
-						</HStack>
-						<Grid templateColumns={{ base: "1fr", md: "1fr", lg: "repeat(2, 1fr)" }} gap={3}>
-							{casePosters.map((connection) => (
-								<UserCard 
-									key={`poster-${connection._id}`} 
-									user={connection} 
-									isConnection={false} 
 									compact={true}
 								/>
 							))}

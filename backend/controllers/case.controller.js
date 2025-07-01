@@ -232,13 +232,24 @@ export const applyForCase = async (req, res) => {
     }
     
     // Add application
-    caseDoc.applications.push({
+    const newApplication = {
       user: userId,
       message: message.trim() || `I'm interested in working on your case.`,
       status: 'pending'
-    });
+    };
     
+    caseDoc.applications.push(newApplication);
     await caseDoc.save();
+    
+    // Get the saved application with user details
+    const savedCase = await Case.findById(caseId)
+      .populate({
+        path: 'applications.user',
+        select: 'name username profilePicture email bio experience specialization rating'
+      });
+    
+    // Find the newly created application
+    const savedApplication = savedCase.applications[savedCase.applications.length - 1];
     
     // Notify the case poster (async)
     notifyCasePosterAboutApplication(caseId, userId, message)
@@ -259,7 +270,8 @@ export const applyForCase = async (req, res) => {
     
     res.status(201).json({ 
       success: true, 
-      message: 'Application submitted successfully' 
+      message: 'Application submitted successfully',
+      application: savedApplication
     });
     
   } catch (error) {
