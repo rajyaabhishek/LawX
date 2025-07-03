@@ -3,7 +3,6 @@ import { useState, useMemo } from "react";
 import { 
 	Box, 
 	Flex, 
-	Avatar, 
 	Text, 
 	Image, 
 	Button, 
@@ -23,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import { useAuthContext } from "../context/AuthContext";
 import PostAction from "./PostAction";
+import PremiumAvatar from "./PremiumAvatar";
 
 const Post = ({ post }) => {
 	const { currentUser, isSignedIn, isGuestMode } = useAuthContext();
@@ -310,11 +310,12 @@ const Post = ({ post }) => {
 			<Box p={{ base: 3, md: 4 }}>
 				<Flex justify="space-between" align="flex-start" mb={4}>
 					<Flex align="center">
-						<Avatar
+						<PremiumAvatar
 							as={Link}
 							to={`/profile/${post?.author?.username}`}
 							src={post.author?.profilePicture || "/avatar.png"}
 							name={post.author?.name || "User"}
+							user={post.author}
 							size={{ base: "sm", md: "md" }}
 							mr={{ base: 2, md: 3 }}
 						/>
@@ -403,9 +404,10 @@ const Post = ({ post }) => {
 					<VStack spacing={3} align="stretch" mb={4} maxH="60" overflowY="auto">
 						{comments.map((comment) => (
 							<Flex key={comment._id || Math.random()} bg={commentBg} p={{ base: 2, md: 3 }} borderRadius="md" align="flex-start">
-								<Avatar
+								<PremiumAvatar
 									src={comment.user?.profilePicture || "/avatar.png"}
 									name={comment.user?.name || "User"}
+									user={comment.user}
 									size="sm"
 									mr={{ base: 2, md: 3 }}
 									flexShrink={0}

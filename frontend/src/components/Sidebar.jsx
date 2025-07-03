@@ -19,7 +19,7 @@ import { useAuthContext } from "../context/AuthContext";
 export default function Sidebar({ user: passedUser, onItemClick }) {
 	const { user: clerkUser } = useUser(); // Get user directly from Clerk
 	const { isPremium, subscription, isLoading } = usePremium();
-	const { currentUser, isLoading: authLoading } = useAuthContext();
+	const { currentUser, isLoading: authLoading, isSignedIn } = useAuthContext();
 
 	// Use Clerk user if available, fallback to passed user
 	const user = clerkUser || passedUser;
@@ -78,17 +78,6 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 		</Box>
 	);
 
-	const PremiumNavItem = ({ to, icon, children }) => (
-		<NavItem 
-			to={to} 
-			icon={icon} 
-			isDisabled={!userIsPremium}
-		
-		>
-			{children}
-		</NavItem>
-	);
-
 	return (
 		<Box 
 			w="100%" 
@@ -96,10 +85,6 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 			bg={cardBg} 
 			overflowY="auto"
 		>
-		
-
-			
-
 			<Box p={4}>
 				<VStack spacing={2} align="stretch">
 					<NavItem to="/" icon={Home}>
@@ -111,62 +96,27 @@ export default function Sidebar({ user: passedUser, onItemClick }) {
 					<NavItem to="/network" icon={UserPlus}>
 						Network
 					</NavItem>
-					{/* My Applications (available to all authenticated users) */}
-					<NavItem to="/my-applications" icon={UserCheck}>
-						My Applications
-					</NavItem>
-					{/* Connections nav item removed as feature is deprecated. Users can access connections via Network page. */}
-				
-
-					{/* Premium Features Section */}
-					{userIsPremium && (
+					
+					{/* Case Features - Available to all authenticated users */}
+					{isSignedIn && (
 						<>
-							<Box pt={3} pb={1} textAlign="center">
-								<HStack justify="center">
-									<Text fontSize="sm" fontWeight="bold" color="gold">
-										Premium Features
-									</Text>
-								</HStack>
-								<Divider mt={1} />
-							</Box>
-							
-							<VStack spacing={2} align="center">
-								<PremiumNavItem to="/create-case" icon={Plus}>
-									Post a Case
-								</PremiumNavItem>
-								<PremiumNavItem to="/my-cases" icon={FileText}>
-									My Cases
-								</PremiumNavItem>
-							</VStack>
+							<NavItem to="/create-case" icon={Plus}>
+								Post a Case
+							</NavItem>
+							<NavItem to="/my-cases" icon={FileText}>
+								My Cases
+							</NavItem>
+							<NavItem to="/my-applications" icon={UserCheck}>
+								My Applications
+							</NavItem>
 						</>
 					)}
-
 					
-					
-
-					{/* Show locked premium features for non-premium users */}
-					{!userIsPremium && (
-						<>
-							<Box pt={3} pb={1} textAlign="center">
-								<HStack justify="center">
-									<Text fontSize="sm" fontWeight="bold" color={mutedText}>
-										Premium Features
-									</Text>
-								</HStack>
-								<Divider mt={1} />
-							</Box>
-							
-							<VStack spacing={2} align="center">
-								<PremiumNavItem to="/premium" icon={Plus}>
-									Post a Case
-								</PremiumNavItem>
-								<PremiumNavItem to="/premium" icon={FileText}>
-									My Cases
-								</PremiumNavItem>
-							</VStack>
-							
-							
-						</>
+					{/* Show My Applications for non-authenticated users pointing to auth */}
+					{!isSignedIn && (
+						<NavItem to="/my-applications" icon={UserCheck}>
+							My Applications
+						</NavItem>
 					)}
 				</VStack>
 			</Box>

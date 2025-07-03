@@ -11,7 +11,6 @@ import {
 	Icon,
 	Badge,
 	Flex,
-	Avatar,
 	Button,
 	IconButton,
 	Spinner
@@ -26,6 +25,7 @@ import UserCard from "../components/UserCard";
 import useShowToast from "../hooks/useShowToast";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import PremiumAvatar from "../components/PremiumAvatar";
 
 // Connection Request Item Component - styled like RecommendedUser
 const ConnectionRequestItem = ({ request }) => {
@@ -67,9 +67,10 @@ const ConnectionRequestItem = ({ request }) => {
 				flex={1}
 				_hover={{ textDecoration: "none" }}
 			>
-				<Avatar
+				<PremiumAvatar
 					src={request.sender.profilePicture || "/avatar.png"}
 					name={request.sender.name}
+					user={request.sender}
 					size="md"
 					mr={3}
 				/>

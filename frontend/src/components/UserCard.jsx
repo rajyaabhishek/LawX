@@ -103,7 +103,7 @@ function UserCard({ user, isConnection, compact = false }) {
 					<img
 						src={user.profilePicture || user.profilePic || "/avatar.png"}
 						alt={user.name}
-						className={`${compact ? 'w-12 h-12' : 'w-16 h-16'} rounded-full object-cover`}
+						className={`${compact ? 'w-12 h-12' : 'w-16 h-16'} rounded-full object-cover ${user.isPremium ? 'ring-2 ring-yellow-400 ring-offset-2' : ''}`}
 					/>
 					{user.isPremium && (
 						<div className='absolute -top-1 -right-1 bg-yellow-500 text-white rounded-full p-1'>

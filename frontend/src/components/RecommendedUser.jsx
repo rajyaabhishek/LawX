@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
 	Flex, 
-	Avatar, 
 	VStack, 
 	Text, 
 	Button, 
@@ -14,6 +13,7 @@ import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { Check, Clock, UserCheck, UserPlus, X } from "lucide-react";
+import PremiumAvatar from "./PremiumAvatar";
 
 const RecommendedUser = ({ user }) => {
 	const queryClient = useQueryClient();
@@ -206,9 +206,10 @@ const RecommendedUser = ({ user }) => {
 				flex={1}
 				_hover={{ textDecoration: "none" }}
 			>
-				<Avatar
+				<PremiumAvatar
 					src={user.profilePicture || "/avatar.png"}
 					name={user.name}
+					user={user}
 					size="md"
 					mr={3}
 				/>

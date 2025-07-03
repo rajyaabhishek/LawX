@@ -423,13 +423,13 @@ const CasesPage = () => {
     cancelled: { color: 'gray', label: 'Cancelled' }
   };
 
-  const isPremiumUser = currentUser?.isPremium && currentUser?.isVerified;
+  const isAuthenticatedUser = !!currentUser;
 
   const tabs = [
     { id: 'browse', label: 'Browse Cases', icon: <Icon as={FiBriefcase} mr={2} /> },
     { id: 'my-cases', label: 'My Cases', icon: <Icon as={FiClock} mr={2} /> },
     { id: 'applications', label: 'My Applications', icon: <Icon as={FiUserCheck} mr={2} /> },
-    ...(isPremiumUser ? [{ id: 'create', label: 'Create Case', icon: <Icon as={FiPlus} mr={2} /> }] : []),
+    ...(isAuthenticatedUser ? [{ id: 'create', label: 'Create Case', icon: <Icon as={FiPlus} mr={2} /> }] : []),
   ];
 
   return (
@@ -593,7 +593,7 @@ const CasesPage = () => {
                   >
                     Clear filters
                   </Button>
-                ) : isPremiumUser && (
+                ) : isAuthenticatedUser && (
                   <Button 
                     colorScheme="blue" 
                     leftIcon={<Icon as={FiPlus} />}
@@ -771,7 +771,7 @@ const CasesPage = () => {
           </TabPanel>
 
           {/* Create Case Tab */}
-          {isPremiumUser && (
+          {isAuthenticatedUser && (
             <TabPanel p={0}>
                               <Box 
                 bg={cardBg}

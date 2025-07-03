@@ -161,17 +161,23 @@ export const AuthProvider = ({ children }) => {
     
     switch (permission) {
       case 'CREATE_CASE':
-        // For case creation, user must be premium and verified
-        return currentUser.isPremium && currentUser.isVerified;
+        // For case creation, any authenticated user can create cases
+        return true;
       case 'VIEW_PREMIUM_CONTENT':
-      case 'VIEW_MY_CASES':
-        // For viewing premium content (like My Cases), only premium is required
+        // Premium content requires premium status
         return currentUser.isPremium;
+      case 'VIEW_MY_CASES':
+        // For viewing cases, any authenticated user can view their cases
+        return true;
       case 'APPLY_TO_CASE':
-        // For applying to cases, user just needs to be verified OR premium
-        return currentUser.isVerified || currentUser.isPremium;
+        // For applying to cases, any authenticated user can apply
+        return true;
       case 'MESSAGE_USERS':
-        return currentUser.isVerified || currentUser.isPremium;
+        // Messaging available to all authenticated users
+        return true;
+      case 'LAWYER_VERIFICATION':
+        // Lawyer verification requires premium
+        return currentUser.isPremium;
       default:
         return false;
     }

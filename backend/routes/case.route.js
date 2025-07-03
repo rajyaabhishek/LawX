@@ -11,7 +11,7 @@ import {
   getPublicCases,
   likeCase
 } from "../controllers/case.controller.js";
-import { protectRoute, checkUserRole, checkPremiumUser, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
+import { protectRoute, checkUserRole, optionalAuth, trackActivity } from "../middleware/auth.middleware.js";
 import Case from "../models/Case.js";
 
 const router = express.Router();
@@ -28,8 +28,8 @@ router.get("/:caseId", optionalAuth, trackActivity, getCaseById);
 // ====================================
 router.use(protectRoute);
 
-// Create a new case (premium users only)
-router.post("/", checkPremiumUser(), createCase);
+// Create a new case (available to all authenticated users)
+router.post("/", protectRoute, createCase);
 
 // Get cases posted by the current user
 router.get("/my/cases", getMyCases);

@@ -108,7 +108,7 @@ function App() {
 							</ProtectedRoute>
 						} />
 						<Route path='/my-cases' element={
-							<ProtectedRoute requirePermission="VIEW_MY_CASES">
+							<ProtectedRoute>
 								<MyCasesPage />
 							</ProtectedRoute>
 						} />
@@ -118,7 +118,7 @@ function App() {
 							</ProtectedRoute>
 						} />
 						<Route path='/create-case' element={
-							<ProtectedRoute requirePermission="CREATE_CASE">
+							<ProtectedRoute>
 								<CreateCasePage />
 							</ProtectedRoute>
 						} />

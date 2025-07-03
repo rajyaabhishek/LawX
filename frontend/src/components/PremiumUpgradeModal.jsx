@@ -162,7 +162,7 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                 <ModalHeader>
                     <HStack>
                         <Crown size={24} color="gold" />
-                        <Text>Upgrade to Premium</Text>
+                        <Text>Get Lawyer Verification</Text>
                     </HStack>
                 </ModalHeader>
                 <ModalCloseButton isDisabled={isProcessing} /   >
@@ -172,32 +172,32 @@ const PremiumUpgradeModal = ({ isOpen, onClose }) => {
                         {/* Benefits Section */}
                         <Box>
                             <Text fontSize="lg" fontWeight="semibold" mb={3}>
-                                Premium Features:
+                                Lawyer Verification Benefits:
                             </Text>
                             <List spacing={2}>
-                                <ListItem>
-                                    <ListIcon as={CheckIcon} color="green.500" />
-                                    Post legal cases for other lawyers to apply
-                                </ListItem>
                                 <ListItem>
                                     <ListIcon as={CheckIcon} color="green.500" />
                                     Get verified lawyer badge
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={CheckIcon} color="green.500" />
-                                    Access to premium lawyer features
+                                    Enhanced profile credibility
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={CheckIcon} color="green.500" />
-                                    Priority support and visibility
+                                    Professional authentication status
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={CheckIcon} color="green.500" />
-                                    Advanced case management tools
+                                    Priority visibility in search results
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={CheckIcon} color="green.500" />
-                                    Unlimited case postings
+                                    Trust badge across the platform
+                                </ListItem>
+                                <ListItem>
+                                    <ListIcon as={CheckIcon} color="green.500" />
+                                    Premium customer support
                                 </ListItem>
                             </List>
                         </Box>

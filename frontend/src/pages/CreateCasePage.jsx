@@ -14,12 +14,12 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import CaseCreation from "../components/CaseCreation";
 import { useNavigate, Link } from "react-router-dom";
-import usePremium from "../hooks/usePremium";
+import { useAuthContext } from "../context/AuthContext";
 
 const CreateCasePage = () => {
   const currentUser = useRecoilValue(userAtom);
   const navigate = useNavigate();
-  const { isPremium, isLoading } = usePremium();
+  const { isSignedIn } = useAuthContext();
   
   const bgColor = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -27,27 +27,7 @@ const CreateCasePage = () => {
   const textColor = useColorModeValue("gray.800", "white");
   const mutedText = useColorModeValue("gray.600", "gray.400");
 
-  // Show loading state while checking premium status
-  if (isLoading) {
-    return (
-      <Box
-        maxW="7xl"
-        mx="auto"
-        p={{ base: 2, md: 3 }}
-        minH="calc(100vh - 120px)"
-        bg={bgColor}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Text>Loading...</Text>
-      </Box>
-    );
-  }
-
-  const isPremiumUser = isPremium;
-
-  if (!isPremiumUser) {
+  if (!isSignedIn) {
     return (
       <Box
         maxW="7xl"
@@ -65,21 +45,22 @@ const CreateCasePage = () => {
           borderColor={borderColor}
           shadow="sm"
         >
-          <Icon as={Crown} fontSize="4xl" color="gold" mb={4} />
+          <Icon as={FiPlus} fontSize="4xl" color="blue.500" mb={4} />
           <Heading size="lg" color={textColor} mb={4}>
-            Premium Feature Required
+            Sign In Required
           </Heading>
           <Text fontSize="md" color={mutedText} mb={6}>
-            Creating cases is available only for premium users. Upgrade to unlock this feature and many more!
+            Please sign in to create and manage legal cases.
           </Text>
           <Button 
-            as={Link} 
-            to="/premium" 
-            colorScheme="yellow" 
+            colorScheme="blue" 
             size="lg"
-            leftIcon={<Icon as={Crown} />}
+            onClick={() => {
+              // This will trigger the auth system
+              navigate('/');
+            }}
           >
-            Upgrade to Premium
+            Sign In
           </Button>
         </Box>
       </Box>

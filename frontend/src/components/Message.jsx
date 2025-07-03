@@ -1,9 +1,10 @@
-import { Avatar, Box, Flex, Text, useColorModeValue, useBreakpointValue } from "@chakra-ui/react";
+import { Box, Flex, Text, useColorModeValue, useBreakpointValue } from "@chakra-ui/react";
 import { BsCheck2All } from "react-icons/bs";
 import { useRecoilValue } from "recoil";
 import { selectedConversationAtom } from "../atoms/messagesAtom";
 import { useUser } from "@clerk/clerk-react";
 import { formatMessageTimestamp } from "../utils/dateUtils";
+import PremiumAvatar from "./PremiumAvatar";
 
 const Message = ({ ownMessage, message, currentMongoUser }) => {
 	const selectedConversation = useRecoilValue(selectedConversationAtom);
@@ -65,12 +66,12 @@ const Message = ({ ownMessage, message, currentMongoUser }) => {
 							</Box>
 						</Flex>
 					</Flex>
-					{!isMobile && <Avatar src={user?.profilePic} w={8} h={8} />}
+					{!isMobile && <PremiumAvatar src={user?.profilePic} user={user ?? undefined} w={8} h={8} />}
 				</Flex>
 			) : (
 				// Other's message - Left side (gray)
 				<Flex gap={2} alignSelf="flex-start" maxW={messageMaxW} w="100%">
-					{!isMobile && <Avatar src={selectedConversation?.userProfilePic} w={8} h={8} />}
+					{!isMobile && <PremiumAvatar src={selectedConversation?.userProfilePic} user={selectedConversation ?? undefined} w={8} h={8} />}
 					<Flex flexDirection="column" w="100%">
 						<Box
 							bg={otherMessageBg}

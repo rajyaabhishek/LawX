@@ -11,9 +11,10 @@ import {
     ListIcon,
     SimpleGrid,
     Card,
-    Badge
+    Badge,
+    Icon
 } from '@chakra-ui/react';
-import { Check } from 'lucide-react';
+import { Check, Shield, Star, Crown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-react';
 import { axiosInstance } from '../lib/axios';
@@ -63,7 +64,7 @@ const Premium = () => {
                 }
             }
             
-            toast.success('🎉 Welcome to Premium! Your subscription is now active.');
+            toast.success('🎉 Welcome to Premium! You are now a verified lawyer.');
             
             setTimeout(() => {
                 window.location.reload();
@@ -98,8 +99,13 @@ const Premium = () => {
 
     return (
         <Box minH="100vh" p={8} bg={useColorModeValue('gray.50', 'gray.900')}>
-            <Box maxW="4xl" mx="auto">
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+            <VStack spacing={8} maxW="4xl" mx="auto">
+              
+
+               
+
+                {/* Pricing Plans */}
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="full">
                     {/* Monthly Plan */}
                     <Card 
                         bg={bgColor} 
@@ -109,7 +115,6 @@ const Premium = () => {
                         borderRadius="xl"
                         _hover={{ 
                             borderColor: "blue.500",
-                            // transform: "translateY(-2px)",
                             boxShadow: "xl",
                             transition: "all 0.2s"
                         }}
@@ -117,7 +122,7 @@ const Premium = () => {
                         <VStack spacing={6} align="stretch">
                             <VStack spacing={2} textAlign="center">
                                 <Text fontSize="2xl" fontWeight="bold" color={textColor}>
-                                    Monthly
+                                    Monthly Verification
                                 </Text>
                                 <Text fontSize="md" color="gray.600">
                                     Perfect for getting started
@@ -133,11 +138,11 @@ const Premium = () => {
                             <List spacing={3}>
                                 <ListItem>
                                     <ListIcon as={Check} color="blue.500" />
-                                    Post legal cases for lawyers to apply
+                                    Verified lawyer badge
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="blue.500" />
-                                    Get verified lawyer badge
+                                    Enhanced profile credibility
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="blue.500" />
@@ -145,7 +150,7 @@ const Premium = () => {
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="blue.500" />
-                                    Unlimited case postings
+                                    Professional authentication
                                 </ListItem>
                             </List>
                             
@@ -160,7 +165,7 @@ const Premium = () => {
                                 _hover={{ bg: "blue.700" }}
                                 _active={{ bg: "blue.800" }}
                             >
-                                Buy ${plans.monthly.displayPrice}/month
+                                Get Verified - ${plans.monthly.displayPrice}/month
                             </PaymentButton>
                         </VStack>
                     </Card>
@@ -169,28 +174,38 @@ const Premium = () => {
                     <Card 
                         bg={bgColor} 
                         border="3px" 
-                        borderColor="yellow.400"
+                        borderColor="gold"
                         p={6}
                         borderRadius="xl"
                         position="relative"
-                        boxShadow="lg"
                         _hover={{ 
-                            borderColor: "yellow.500",
-                            // transform: "translateY(-2px)",
+                            transform: "translateY(-2px)",
                             boxShadow: "2xl",
                             transition: "all 0.2s"
                         }}
                     >
+                        <Badge 
+                            colorScheme="yellow" 
+                            position="absolute" 
+                            top={-3} 
+                            left="50%" 
+                            transform="translateX(-50%)"
+                            fontSize="sm"
+                            px={3}
+                            py={1}
+                        >
+                            BEST VALUE
+                        </Badge>
                         
                         <VStack spacing={6} align="stretch">
                             <VStack spacing={2} textAlign="center">
                                 <Text fontSize="2xl" fontWeight="bold" color={textColor}>
-                                    Annual
+                                    Annual Verification
                                 </Text>
-                                <Text fontSize="md" color="green.600" fontWeight="semibold">
-                                    Save ${calculateSavings()} with annual billing
+                                <Text fontSize="md" color="gray.600">
+                                    Save ${savings} per year!
                                 </Text>
-                                <Text fontSize="4xl" fontWeight="bold" color="green.600">
+                                <Text fontSize="4xl" fontWeight="bold" color="yellow.600">
                                     $50
                                     <Text as="span" fontSize="lg" color="gray.500" ml={1}>
                                         /year
@@ -209,11 +224,11 @@ const Premium = () => {
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="green.500" />
-                                    Early access to new features
+                                    Priority verification processing
                                 </ListItem>
                                 <ListItem>
                                     <ListIcon as={Check} color="green.500" />
-                                    Exclusive premium features
+                                    Enhanced trust badge
                                 </ListItem>
                             </List>
                             
@@ -229,12 +244,20 @@ const Premium = () => {
                                 _active={{ bg: "yellow.600" }}
                                 fontWeight="bold"
                             >
-                                Buy ${plans.yearly.displayPrice}/year
+                                Get Verified - ${plans.yearly.displayPrice}/year
                             </PaymentButton>
                         </VStack>
                     </Card>
                 </SimpleGrid>
-            </Box>
+
+                {/* Additional Info */}
+                <Box textAlign="center" maxW="2xl">
+                    <Text fontSize="md" color="gray.600">
+                        Your verification badge will appear immediately after payment confirmation. 
+                        This helps build trust with potential clients and establishes your credibility as a legal professional.
+                    </Text>
+                </Box>
+            </VStack>
         </Box>
     );
 };
