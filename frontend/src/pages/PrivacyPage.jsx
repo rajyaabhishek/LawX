@@ -11,7 +11,7 @@ const PrivacyPage = () => {
 
       <div className="introduction-section">
         <p className="paragraph">
-          This Privacy Policy ("Policy") governs the collection, use, processing, storage, and disclosure of personal information by LawX ("we," "us," "our," or "Company"), a professional networking platform designed exclusively for the Indian legal community. This Policy applies to all users ("you," "your," or "User") of our platform, website, mobile applications, and related services (collectively, the "Service").
+          This Privacy Policy ("Policy") governs the collection, use, processing, storage, and disclosure of personal information by LawX ("we," "us," "our," or "Company"), a professional networking platform designed exclusively for the global legal community. This Policy applies to all users ("you," "your," or "User") of our platform, website, mobile applications, and related services (collectively, the "Service").
         </p>
         <p className="paragraph">
           By creating an account, accessing, or using our Service, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy. If you do not agree with the terms of this Policy, please do not use our Service.
@@ -24,7 +24,7 @@ const PrivacyPage = () => {
         <h3 className="subsection-heading">1.1 Personal and Professional Information</h3>
         <p className="paragraph">We collect the following categories of personal and professional information:</p>
         <ul className="list">
-          <li className="list-item"><strong>Identity Information:</strong> Full name, professional credentials, bar registration number, court enrollment details, and professional qualifications as verified through the Bar Council of India database.</li>
+          <li className="list-item"><strong>Identity Information:</strong> Full name, professional credentials, bar registration number, court enrollment details, and professional qualifications as verified through appropriate legal regulatory body databases.</li>
           <li className="list-item"><strong>Contact Information:</strong> Email address, phone number, business address, and professional correspondence details.</li>
           <li className="list-item"><strong>Authentication Data:</strong> User ID and authentication tokens provided by our identity verification partner, Clerk, including secure login credentials and multi-factor authentication data.</li>
           <li className="list-item"><strong>Professional Profile Data:</strong> Legal specializations, practice areas, educational background, work experience, professional achievements, court admissions, and any voluntary professional information you choose to provide.</li>
@@ -199,7 +199,7 @@ const PrivacyPage = () => {
       <section className="policy-section">
         <h2 className="section-heading">7. International Data Transfers</h2>
         <p className="paragraph">
-          While we primarily operate within India, some of our service providers may be located outside India. When we transfer personal information internationally, we ensure appropriate safeguards are in place, including:
+          As a global platform, we may transfer personal information across international borders to provide our services. When we transfer personal information internationally, we ensure appropriate safeguards are in place, including:
         </p>
         <ul className="list">
           <li className="list-item">Standard Contractual Clauses approved by relevant data protection authorities</li>
@@ -251,7 +251,7 @@ const PrivacyPage = () => {
         </p>
         <ul className="list">
           <li className="list-item">The appropriate data protection authority in your jurisdiction</li>
-          <li className="list-item">The Bar Council of India for professional conduct matters</li>
+          <li className="list-item">The relevant professional regulatory body in your jurisdiction for professional conduct matters</li>
           <li className="list-item">Consumer protection authorities for service-related concerns</li>
         </ul>
       </section>

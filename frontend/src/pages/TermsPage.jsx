@@ -58,9 +58,9 @@ const TermsPage = () => {
         </p>
         <ul className="list">
           <li className="list-item">At least 18 years of age and legally capable of entering into binding agreements</li>
-          <li className="list-item">A verified legal professional registered with the Bar Council of India or other recognized legal regulatory body</li>
+          <li className="list-item">A verified legal professional registered with a recognized legal regulatory body in your jurisdiction</li>
           <li className="list-item">A law student enrolled in a recognized law school (with limited access)</li>
-          <li className="list-item">A legal institution, law firm, or organization authorized to practice law in India</li>
+          <li className="list-item">A legal institution, law firm, or organization authorized to practice law</li>
           <li className="list-item">In good standing with your respective bar or regulatory authority</li>
         </ul>
 
@@ -94,8 +94,8 @@ const TermsPage = () => {
           All users must adhere to:
         </p>
         <ul className="list">
-          <li className="list-item">Bar Council of India Rules and Professional Conduct Standards</li>
-          <li className="list-item">Applicable state bar regulations and ethical guidelines</li>
+          <li className="list-item">Professional conduct standards and ethical guidelines of their jurisdiction</li>
+          <li className="list-item">Applicable bar regulations and ethical guidelines</li>
           <li className="list-item">Professional responsibility requirements of their jurisdiction</li>
           <li className="list-item">LawX Community Guidelines and Professional Standards</li>
           <li className="list-item">Confidentiality obligations and client privilege requirements</li>
@@ -235,7 +235,7 @@ const TermsPage = () => {
         <h3 className="subsection-heading">7.1 Premium Subscription Terms</h3>
         <ul className="list">
           <li className="list-item">Premium subscriptions are billed monthly or annually in advance</li>
-          <li className="list-item">All fees are stated in Indian Rupees (INR) unless otherwise specified</li>
+          <li className="list-item">All fees are stated in local currency unless otherwise specified</li>
           <li className="list-item">Subscription fees are generally non-refundable except as required by law</li>
           <li className="list-item">Price changes will be communicated 30 days in advance</li>
           <li className="list-item">Subscriptions automatically renew unless cancelled before renewal date</li>
@@ -352,7 +352,7 @@ const TermsPage = () => {
         
         <h3 className="subsection-heading">11.1 Governing Law and Jurisdiction</h3>
         <p className="paragraph">
-          These Terms shall be governed by and construed in accordance with the laws of India, without regard to conflict of law principles. Any disputes arising under or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts of New Delhi, India.
+          These Terms shall be governed by and construed in accordance with applicable international laws and regulations, without regard to conflict of law principles. Any disputes arising under or in connection with these Terms shall be subject to the jurisdiction of appropriate courts or arbitration bodies as determined by the nature of the dispute and parties involved.
         </p>
 
         <h3 className="subsection-heading">11.2 Dispute Resolution Process</h3>
@@ -362,8 +362,8 @@ const TermsPage = () => {
         <ul className="list">
           <li className="list-item"><strong>Direct Communication:</strong> Good faith discussions between the parties</li>
           <li className="list-item"><strong>Mediation:</strong> Non-binding mediation through a mutually agreed mediator</li>
-          <li className="list-item"><strong>Arbitration:</strong> Binding arbitration under Indian Arbitration and Conciliation Act, 1996</li>
-          <li className="list-item"><strong>Professional Standards Review:</strong> Bar Council review for professional conduct matters</li>
+          <li className="list-item"><strong>Arbitration:</strong> Binding arbitration under applicable arbitration laws and regulations</li>
+          <li className="list-item"><strong>Professional Standards Review:</strong> Professional regulatory body review for professional conduct matters</li>
         </ul>
 
         <h3 className="subsection-heading">11.3 Class Action Waiver</h3>
@@ -385,11 +385,11 @@ const TermsPage = () => {
           All users must comply with:
         </p>
         <ul className="list">
-          <li className="list-item">Bar Council of India Rules and Regulations</li>
-          <li className="list-item">Advocates Act, 1961 and related amendments</li>
-          <li className="list-item">State Bar Council regulations and local rules</li>
+          <li className="list-item">Local Bar and professional regulatory body rules</li>
+          <li className="list-item">Applicable legal practice acts and related amendments in their jurisdiction</li>
+          <li className="list-item">Regional Bar Council regulations and local rules</li>
           <li className="list-item">Professional Standards and Ethics Rules</li>
-          <li className="list-item">Information Technology Act, 2000 and privacy regulations</li>
+          <li className="list-item">Applicable data protection and privacy regulations</li>
           <li className="list-item">Anti-money laundering and financial regulations</li>
         </ul>
 
